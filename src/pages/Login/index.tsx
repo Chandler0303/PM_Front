@@ -21,14 +21,7 @@ import LogoImg from "@/assets/logo.png";
 // 类型声明
 // ==================
 import { Dispatch } from "@/store";
-import {
-  Role,
-  Menu,
-  Power,
-  UserBasicInfo,
-  Res,
-  MenuAndPower,
-} from "@/models/index.type";
+import { Menu, Power, UserBasicInfo, Res } from "@/models/index.type";
 import { CheckboxChangeEvent } from "antd/lib/checkbox";
 
 // ==================
@@ -79,7 +72,6 @@ function LoginContainer(): JSX.Element {
   const loginIn = useCallback(
     async (username: string, password: string) => {
       let userBasicInfo: UserBasicInfo | null = null;
-      let roles: Role[] = [];
       let menus: Menu[] = [];
       let powers: Power[] = [];
 
@@ -95,49 +87,30 @@ function LoginContainer(): JSX.Element {
 
       userBasicInfo = res1.data;
 
-      /** 2.根据角色id获取角色信息 (角色信息中有该角色拥有的菜单id和权限id) **/
-      const res2 = await dispatch.sys.getRoleById({
-        id: (userBasicInfo as UserBasicInfo).roles,
-      });
-      if (!res2 || res2.status !== 200) {
-        // 角色查询失败
-        return res2;
-      }
-
-      roles = res2.data.filter((item: Role) => item.conditions === 1); // conditions: 1启用 -1禁用
-
-      /** 3.根据菜单id 获取菜单信息 **/
-      const menuAndPowers = roles.reduce(
-        (a, b) => [...a, ...b.menuAndPowers],
-        [] as MenuAndPower[]
-      );
       const res3 = await dispatch.sys.getMenusById({
-        id: Array.from(new Set(menuAndPowers.map((item) => item.menuId))),
+        id: Array.from(
+          new Set((userBasicInfo as UserBasicInfo).menus.map((item) => item))
+        ),
       });
       if (!res3 || res3.status !== 200) {
         // 查询菜单信息失败
         return res3;
       }
 
-      menus = res3.data.filter((item: Menu) => item.conditions === 1);
+      menus = res3.data;
 
       /** 4.根据权限id，获取权限信息 **/
       const res4 = await dispatch.sys.getPowerById({
         id: Array.from(
-          new Set(
-            menuAndPowers.reduce(
-              (a, b: MenuAndPower) => [...a, ...b.powers],
-              [] as number[]
-            )
-          )
+          new Set((userBasicInfo as UserBasicInfo).powers.map((item) => item))
         ),
       });
       if (!res4 || res4.status !== 200) {
         // 权限查询失败
         return res4;
       }
-      powers = res4.data.filter((item: Power) => item.conditions === 1);
-      return { status: 200, data: { userBasicInfo, roles, menus, powers } };
+      powers = res4.data;
+      return { status: 200, data: { userBasicInfo, menus, powers } };
     },
     [dispatch.sys, dispatch.app]
   );

@@ -35,23 +35,11 @@ import { RootState, Dispatch } from "@/store";
 // ==================
 // 异步加载各路由模块
 // ==================
-const [
-  NotFound,
-  NoPower,
-  Login,
-  Home,
-  MenuAdmin,
-  PowerAdmin,
-  RoleAdmin,
-  UserAdmin,
-] = [
+const [NotFound, NoPower, Login, Home, UserAdmin] = [
   () => import("../pages/ErrorPages/404"),
   () => import("../pages/ErrorPages/401"),
   () => import("../pages/Login"),
   () => import("../pages/Home"),
-  () => import("../pages/System/MenuAdmin"),
-  () => import("../pages/System/PowerAdmin"),
-  () => import("../pages/System/RoleAdmin"),
   () => import("../pages/System/UserAdmin"),
 ].map((item) => {
   return loadable(item as any, {
@@ -101,30 +89,6 @@ function RouterCom(): JSX.Element {
       >
         <Route path="/" element={<Navigate to="home" />} />
         <Route path="home" element={<Home />} />
-        <Route
-          path="system/menuadmin"
-          element={
-            <AuthNoPower>
-              <MenuAdmin />
-            </AuthNoPower>
-          }
-        />
-        <Route
-          path="system/poweradmin"
-          element={
-            <AuthNoPower>
-              <PowerAdmin />
-            </AuthNoPower>
-          }
-        />
-        <Route
-          path="system/roleadmin"
-          element={
-            <AuthNoPower>
-              <RoleAdmin />
-            </AuthNoPower>
-          }
-        />
         <Route
           path="system/useradmin"
           element={

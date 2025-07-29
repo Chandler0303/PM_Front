@@ -70,8 +70,8 @@ export interface UserBasicInfo {
   phone: string | number; // 手机
   email: string; // 邮箱
   desc: string; // 描述
-  conditions: number; // 状态 1启用，-1禁用
-  roles: number[]; // 拥有的所有角色ID
+  powers: number[]; // 拥有的所有权限ID
+  menus: number[]; // 拥有的所有角色ID
 }
 
 // 添加修改用户时参数的数据类型

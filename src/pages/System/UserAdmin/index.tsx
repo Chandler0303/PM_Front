@@ -115,22 +115,7 @@ function UserAdminContainer(): JSX.Element {
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
     onGetData(page);
-    getAllRolesData();
   });
-
-  // 函数 - 获取所有的角色数据，用于分配角色控件的原始数据
-  const getAllRolesData = async (): Promise<void> => {
-    try {
-      const res = await dispatch.sys.getAllRoles();
-      if (res && res.status === 200) {
-        setRole({
-          roleData: res.data,
-        });
-      }
-    } catch {
-      //
-    }
-  };
 
   // 函数 - 查询当前页面所需列表数据
   async function onGetData(page: {

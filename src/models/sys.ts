@@ -11,10 +11,7 @@ import { Dispatch } from "@/store";
 import {
   Menu,
   Role,
-  MenuParam,
-  PowerParam,
   PowerTree,
-  RoleParam,
   SysState,
   Res,
   UserBasicInfoParam,
@@ -46,65 +43,12 @@ export default {
 
   effects: (dispatch: Dispatch) => ({
     /**
-     * 获取所有菜单
-     * **/
-    async getMenus(): Promise<Res> {
-      try {
-        const res: Res = await axios.get("/api/getmenus");
-        if (res && res.status === 200) {
-          dispatch.sys.reducerSetMenus(res.data);
-        }
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-    /**
      * 根据菜单ID获取对应的菜单信息
      * @param {number} id 可以是一个数字也可以是一个数组
      * **/
     async getMenusById(params: { id: number | number[] }) {
       try {
         const res: Res = await axios.post(`/api/getMenusById`, params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 添加菜单
-     * @param params MenuParam
-     */
-    async addMenu(params: MenuParam) {
-      try {
-        const res: Res = await axios.post("/api/addmenu", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-    /**
-     * 修改菜单
-     * **/
-    async upMenu(params: MenuParam) {
-      try {
-        const res: Res = await axios.post("/api/upmenu", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-    /**
-     * 删除菜单
-     * **/
-    async delMenu(params: { id: number }) {
-      try {
-        const res: Res = await axios.post("/api/delmenu", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -141,78 +85,6 @@ export default {
       return;
     },
 
-    /** 获取所有角色 **/
-    async getAllRoles(): Promise<Res> {
-      try {
-        const res: Res = await axios.get("/api/getAllRoles");
-        if (res && res.status === 200) {
-          dispatch.sys.reducerSetRoles(res.data);
-        }
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-    /**
-     * 添加权限
-     * **/
-    async addPower(params: PowerParam) {
-      try {
-        const res: Res = await axios.post("/api/addpower", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 修改权限
-     * **/
-    async upPower(params: PowerParam) {
-      try {
-        const res: Res = await axios.post("/api/uppower", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 删除权限
-     * **/
-    async delPower(params: { id: number }) {
-      try {
-        const res: Res = await axios.post("/api/delpower", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 分页查询角色数据
-     * **/
-    async getRoles(params: {
-      pageNum: number;
-      pageSize: number;
-      title?: string;
-      conditions?: number;
-    }) {
-      try {
-        const res: Res = await axios.get(
-          `/api/getroles?${qs.stringify(params)}`
-        );
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
     /**
      * 通过角色ID查询对应的角色数据
      * @param id 可以是一个数字，也可以是一个数组
@@ -221,44 +93,6 @@ export default {
     async getRoleById(params: { id: number | number[] }) {
       try {
         const res: Res = await axios.post(`/api/getRoleById`, params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 添加角色
-     * **/
-    async addRole(params: RoleParam) {
-      try {
-        const res: Res = await axios.post("/api/addrole", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-    /**
-     * 修改角色
-     * **/
-    async upRole(params: RoleParam) {
-      try {
-        const res: Res = await axios.post("/api/uprole", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 删除角色
-     * **/
-    async delRole(params: { id: number }) {
-      try {
-        const res: Res = await axios.post("/api/delrole", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
