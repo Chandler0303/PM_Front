@@ -7,6 +7,8 @@ import { useMount } from "react-use";
 import { SearchOutlined } from "@ant-design/icons";
 import tools from "@/util/tools";
 import { TableRecordData as UserInfo } from "@/pages/System/UserAdmin/index.type";
+import "./index.less";
+
 
 function ProcedureManagementContainer(): JSX.Element{
     const dispatch = useDispatch<Dispatch>();
@@ -129,13 +131,17 @@ function ProcedureManagementContainer(): JSX.Element{
                     (
                       <div>
                         <Segmented 
+                            style={{ marginBottom: 20 }}
                             options={procedureInfo.config.map((item: any) => item.stageName)}
                             onChange={segmentChange}
                           />
                           {
                             currentNodes.map((item: any) => (
                               <div>
-                                <h3>{item.name}</h3>
+                                <div className="g-flex">
+                                  <span className="line"></span>
+                                  <h3>{item.name}</h3>
+                                </div>
                                 <Form
                               
                                   layout="vertical"

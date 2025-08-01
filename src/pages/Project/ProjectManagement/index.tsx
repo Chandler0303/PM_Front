@@ -3,7 +3,7 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Children } from "react";
 import { useSetState, useMount } from "react-use";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -69,6 +69,8 @@ import { RootState, Dispatch } from "@/store";
 // CSS
 // ==================
 import "./index.less";
+import { ProcedureInfo } from "../ProcedureManagement/index.type";
+import { ColumnsType } from "antd/lib/table";
 
 // ==================
 // 本组件
@@ -81,6 +83,152 @@ function UserAdminContainer(): JSX.Element {
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
+  const [procedureData, setProcedureData] = useState<ProcedureInfo[]>([])
+  const [columns, setColumns] = useState<ColumnsType<TableRecordData>>([
+    {
+      title: "序号",
+      dataIndex: "serial",
+      key: "serial",
+      width: 150
+    },
+    {
+      title: "工程编号",
+      dataIndex: "username",
+      key: "username",
+      width: 150
+    },
+    {
+      title: "年度",
+      dataIndex: "year",
+      key: "year",
+      width: 150
+    },
+    {
+      title: "工程名称",
+      dataIndex: "name",
+      key: "name",
+      width: 150
+    },
+    {
+      title: "合同金额",
+      dataIndex: "amount",
+      key: "amount",
+      width: 150
+    },
+    {
+      title: "项目类型",
+      dataIndex: "type",
+      key: "type",
+      width: 150,
+      render: (v: number): JSX.Element =>
+        v === 1 ? (
+          <span style={{ color: "green" }}>资本类</span>
+        ) : (
+          <span style={{ color: "red" }}>其他</span>
+        ),
+    },
+    {
+      title: "项目阶段",
+      dataIndex: "stage",
+      key: "stage",
+      width: 150
+    },
+    {
+      title: "工程状态",
+      dataIndex: "status",
+      key: "status",
+      width: 150,
+      render: (v: number): JSX.Element =>
+        v === 1 ? (
+          <span style={{ color: "green" }}>未开工</span>
+        ) : (
+          <span style={{ color: "red" }}>施工中</span>
+        ),
+    },
+    {
+      title: "分公司",
+      dataIndex: "companyName",
+      key: "companyName",
+      width: 150,
+    },
+    {
+      title: '时间点',
+      key: 'durationLabel',
+      dataIndex: 'durationLabel',
+      width: 150
+    },
+    {
+      title: "操作",
+      key: "control",
+      width: 200,
+      render: (v: null, record: TableRecordData) => {
+        const controls = [];
+        const u = userinfo.userBasicInfo || { id: -1 };
+        controls.push(
+          <span
+            key="0"
+            className="control-btn green"
+            onClick={() => onModalShow(record, "see")}
+          >
+            <Tooltip placement="top" title="查看">
+              <EyeOutlined />
+            </Tooltip>
+          </span>
+        );
+        p.includes("user:up") &&
+          controls.push(
+            <span
+              key="1"
+              className="control-btn blue"
+              onClick={() => onModalShow(record, "up")}
+            >
+              <Tooltip placement="top" title="修改">
+                <ToolOutlined />
+              </Tooltip>
+            </span>
+          );
+        p.includes("user:role") &&
+          controls.push(
+            <span
+              key="2"
+              className="control-btn blue"
+              onClick={() => onTreeShowClick(record)}
+            >
+              <Tooltip placement="top" title="分配角色">
+                <EditOutlined />
+              </Tooltip>
+            </span>
+          );
+
+        p.includes("user:del") &&
+          u.id !== record.id &&
+          controls.push(
+            <Popconfirm
+              key="3"
+              title="确定删除吗?"
+              onConfirm={() => onDel(record.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <span className="control-btn red">
+                <Tooltip placement="top" title="删除">
+                  <DeleteOutlined />
+                </Tooltip>
+              </span>
+            </Popconfirm>
+          );
+
+        const result: JSX.Element[] = [];
+        controls.forEach((item, index) => {
+          if (index) {
+            result.push(<Divider key={`line${index}`} type="vertical" />);
+          }
+          result.push(item);
+        });
+        return result;
+      },
+    },
+  ])
 
   // 分页相关参数
   const [page, setPage] = useSetState<Page>({
@@ -114,6 +262,7 @@ function UserAdminContainer(): JSX.Element {
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
     onGetData(page);
+    onGetProcedureData()
   });
 
   // 函数 - 查询当前页面所需列表数据
@@ -144,6 +293,19 @@ function UserAdminContainer(): JSX.Element {
       setLoading(false);
     }
   }
+
+  async function onGetProcedureData(): Promise<void> {
+      try {
+        const res = await dispatch.sys.getProcedureList();
+        if (res && res.status === 200) {
+          setProcedureData(res.data.list);
+          tableColumnsHanle(res.data.list)
+        } else {
+          message.error(res?.message ?? "数据获取失败");
+        }
+      } finally {
+      }
+    }
 
   // 搜索 - 名称输入框值改变时触发
   const searchUsernameChange = (
@@ -329,116 +491,42 @@ function UserAdminContainer(): JSX.Element {
   // 属性 和 memo
   // ==================
 
-  // table字段
-  const tableColumns = [
-    {
-      title: "序号",
-      dataIndex: "serial",
-      key: "serial",
-    },
-    {
-      title: "用户名",
-      dataIndex: "username",
-      key: "username",
-    },
-    {
-      title: "电话",
-      dataIndex: "phone",
-      key: "phone",
-    },
-    {
-      title: "邮箱",
-      dataIndex: "email",
-      key: "email",
-    },
-    {
-      title: "描述",
-      dataIndex: "desc",
-      key: "desc",
-    },
-    {
-      title: "状态",
-      dataIndex: "conditions",
-      key: "conditions",
-      render: (v: number): JSX.Element =>
-        v === 1 ? (
-          <span style={{ color: "green" }}>启用</span>
-        ) : (
-          <span style={{ color: "red" }}>禁用</span>
-        ),
-    },
-    {
-      title: "操作",
-      key: "control",
-      width: 200,
-      render: (v: null, record: TableRecordData) => {
-        const controls = [];
-        const u = userinfo.userBasicInfo || { id: -1 };
-        controls.push(
-          <span
-            key="0"
-            className="control-btn green"
-            onClick={() => onModalShow(record, "see")}
-          >
-            <Tooltip placement="top" title="查看">
-              <EyeOutlined />
-            </Tooltip>
-          </span>
-        );
-        p.includes("user:up") &&
-          controls.push(
-            <span
-              key="1"
-              className="control-btn blue"
-              onClick={() => onModalShow(record, "up")}
-            >
-              <Tooltip placement="top" title="修改">
-                <ToolOutlined />
-              </Tooltip>
-            </span>
-          );
-        p.includes("user:role") &&
-          controls.push(
-            <span
-              key="2"
-              className="control-btn blue"
-              onClick={() => onTreeShowClick(record)}
-            >
-              <Tooltip placement="top" title="分配角色">
-                <EditOutlined />
-              </Tooltip>
-            </span>
-          );
+  function chineseToBase64Key(str: string) {
+    return window.btoa(unescape(encodeURIComponent(str)));
+  }
 
-        p.includes("user:del") &&
-          u.id !== record.id &&
-          controls.push(
-            <Popconfirm
-              key="3"
-              title="确定删除吗?"
-              onConfirm={() => onDel(record.id)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <span className="control-btn red">
-                <Tooltip placement="top" title="删除">
-                  <DeleteOutlined />
-                </Tooltip>
-              </span>
-            </Popconfirm>
-          );
+  const tableColumnsHanle = (list: ProcedureInfo[]) => {
+    const config = list[0].config
 
-        const result: JSX.Element[] = [];
-        controls.forEach((item, index) => {
-          if (index) {
-            result.push(<Divider key={`line${index}`} type="vertical" />);
-          }
-          result.push(item);
-        });
-        return result;
-      },
-    },
-  ];
+    const oneColumns = config.map(stage => {
+      return {
+         title: stage.stageName,
+         children: stage.nodes.map((node: any) => {
+            return {
+              title: '负责人',
+              children: [
+                {
+                  title: node.name,
+                  children: [{
+                    title: node.plannedDays || '--',
+                    key: chineseToBase64Key(node.stageName),
+                    dataIndex: chineseToBase64Key(node.stageName),
+                    width: 150
+                  }]
+                }
+              ]
+              
+            }
+         })
+          
+      }
+    })
+    setColumns([
+      ...columns.slice(0, columns.length - 1),
+      ...oneColumns,
+      columns[columns.length - 1]
+    ])
+  }
 
   // table列表所需数据
   const tableData = useMemo(() => {
@@ -510,9 +598,11 @@ function UserAdminContainer(): JSX.Element {
       </div>
       <div className="diy-table">
         <Table
-          columns={tableColumns}
+          columns={columns}
           loading={loading}
           dataSource={tableData}
+          scroll={{ x: 'max-content', y: 55 * 5 }}
+          bordered
           pagination={{
             total: page.total,
             current: page.pageNum,
