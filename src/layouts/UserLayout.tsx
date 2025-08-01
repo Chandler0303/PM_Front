@@ -16,10 +16,7 @@ import "./UserLayout.less";
 // 组件
 // ==================
 
-import Footer from "../components/Footer";
-
 const { Content } = Layout;
-
 // ==================
 // 本组件
 // ==================
@@ -29,7 +26,6 @@ export default function AppContainer(): JSX.Element {
       <Content className="content">
         <Outlet />
       </Content>
-      <Footer className="user-layout" />
     </Layout>
   );
 }

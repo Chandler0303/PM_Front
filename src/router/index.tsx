@@ -35,11 +35,21 @@ import { RootState, Dispatch } from "@/store";
 // ==================
 // 异步加载各路由模块
 // ==================
-const [NotFound, NoPower, Login, Home, UserAdmin] = [
+const [
+  NotFound,
+  NoPower,
+  Login,
+  Home,
+  ProjectManagement,
+  ProcedureManagement,
+  UserAdmin,
+] = [
   () => import("../pages/ErrorPages/404"),
   () => import("../pages/ErrorPages/401"),
   () => import("../pages/Login"),
   () => import("../pages/Home"),
+  () => import("../pages/Project/ProjectManagement"),
+  () => import("../pages/Project/ProcedureManagement"),
   () => import("../pages/System/UserAdmin"),
 ].map((item) => {
   return loadable(item as any, {
@@ -64,7 +74,6 @@ function RouterCom(): JSX.Element {
       dispatch.app.setUserInfo(JSON.parse(tools.uncompile(userTemp)));
     }
   }, [dispatch.app, userinfo.userBasicInfo]);
-
   return (
     <Routes>
       <Route
@@ -75,7 +84,7 @@ function RouterCom(): JSX.Element {
           </AuthWithLogin>
         }
       >
-        <Route path="/user" element={<Navigate to="login" />}></Route>
+        <Route index element={<Navigate to="login" />}></Route>
         <Route path="login" element={<Login />}></Route>
         <Route path="*" element={<Navigate to="login" />} />
       </Route>
@@ -87,8 +96,24 @@ function RouterCom(): JSX.Element {
           </AuthNoLogin>
         }
       >
-        <Route path="/" element={<Navigate to="home" />} />
+        <Route index element={<Navigate to="home" />} />
         <Route path="home" element={<Home />} />
+        <Route
+          path="project/management"
+          element={
+            <AuthNoPower>
+              <ProjectManagement />
+            </AuthNoPower>
+          }
+        />
+        <Route
+          path="procedure/management"
+          element={
+            <AuthNoPower>
+              <ProcedureManagement />
+            </AuthNoPower>
+          }
+        />
         <Route
           path="system/useradmin"
           element={

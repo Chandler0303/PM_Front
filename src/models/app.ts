@@ -8,7 +8,6 @@ import { message } from "antd";
 import { Dispatch, RootState } from "@/store";
 import {
   Menu,
-  Role,
   Power,
   MenuAndPower,
   UserInfo,
@@ -18,7 +17,6 @@ import {
 
 const defaultState: AppState = {
   userinfo: {
-    roles: [], // 当前用户拥有的角色
     menus: [], // 当前用户拥有的已授权的菜单
     powers: [], // 当前用户拥有的权限数据
     userBasicInfo: null, // 用户的基础信息，id,用户名...
@@ -91,52 +89,13 @@ export default {
       /** 2.重新查询角色信息 **/
       const userinfo: UserInfo = rootState.app.userinfo;
 
-      const res2: Res | undefined = await dispatch.sys.getRoleById({
-        id: userinfo.roles.map((item) => item.id),
-      });
-      if (!res2 || res2.status !== 200) {
-        // 角色查询失败
-        return res2;
-      }
+      
+      const menus: Menu[] = userinfo.menus
 
-      const roles: Role[] = res2.data.filter(
-        (item: Role) => item.conditions === 1
-      );
+      const powers: Power[] = userinfo.powers
 
-      /** 3.根据菜单id 获取菜单信息 **/
-      const menuAndPowers = roles.reduce(
-        (a, b) => [...a, ...b.menuAndPowers],
-        [] as MenuAndPower[]
-      );
-      const res3: Res | undefined = await dispatch.sys.getMenusById({
-        id: Array.from(new Set(menuAndPowers.map((item) => item.menuId))),
-      });
-      if (!res3 || res3.status !== 200) {
-        // 查询菜单信息失败
-        return res3;
-      }
-      const menus: Menu[] = res3.data.filter(
-        (item: Menu) => item.conditions === 1
-      );
-
-      /** 4.根据权限id，获取权限信息 **/
-      const res4: Res | undefined = await dispatch.sys.getPowerById({
-        id: Array.from(
-          new Set(
-            menuAndPowers.reduce((a, b) => [...a, ...b.powers], [] as number[])
-          )
-        ),
-      });
-      if (!res4 || res4.status !== 200) {
-        // 权限查询失败
-        return res4;
-      }
-      const powers: Power[] = res4.data.filter(
-        (item: Power) => item.conditions === 1
-      );
       this.setUserInfo({
         ...userinfo,
-        roles,
         menus,
         powers,
       });

@@ -18,7 +18,6 @@ import "./BasicLayout.less";
 // ==================
 import Header from "@/components/Header";
 import MenuCom from "@/components/Menu";
-import Footer from "@/components/Footer";
 import Bread from "@/components/Bread";
 
 const { Content } = Layout;
@@ -60,7 +59,6 @@ function BasicLayoutCom(): JSX.Element {
         <Content className="content">
           <Outlet />
         </Content>
-        <Footer />
       </Layout>
     </Layout>
   );

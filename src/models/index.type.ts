@@ -22,22 +22,6 @@ export interface MenuAndPower {
   powers: number[]; // 该菜单拥有的所有权限ID
 }
 
-// 角色添加和修改时的参数类型
-export interface RoleParam {
-  id?: number; // ID,添加时可以不传id
-  title: string; // 角色名
-  desc: string; // 描述
-  sorts: number; // 排序编号
-  conditions: number; // 状态，1启用，-1禁用
-  menuAndPowers?: MenuAndPower[]; // 添加时可以不传菜单和权限
-}
-
-// 角色对象
-export interface Role extends RoleParam {
-  id: number; // ID
-  menuAndPowers: MenuAndPower[]; // 当前角色拥有的菜单id和权限id
-}
-
 // 权限添加修改时的参数类型
 export interface PowerParam {
   id?: number; // ID, 添加时可以没有id
@@ -58,7 +42,6 @@ export interface Power extends PowerParam {
 export interface UserInfo {
   userBasicInfo: UserBasicInfo | null; // 用户的基本信息
   menus: Menu[]; // 拥有的所有菜单对象
-  roles: Role[]; // 拥有的所有角色对象
   powers: Power[]; // 拥有的所有权限对象
 }
 
@@ -79,10 +62,8 @@ export interface UserBasicInfoParam {
   id?: number; // ID
   username: string; // 用户名
   password: string | number; // 密码
-  phone?: string | number; // 手机
-  email?: string; // 邮箱
-  desc?: string; // 描述
-  conditions?: number; // 状态 1启用，-1禁用
+  name: string | number;
+  org: number;
 }
 
 export interface PowerTree extends Menu {
@@ -98,7 +79,6 @@ export interface AppState {
 // ./sys.js的state类型
 export interface SysState {
   menus: Menu[];
-  roles: Role[];
   powerTreeData: PowerTree[];
 }
 

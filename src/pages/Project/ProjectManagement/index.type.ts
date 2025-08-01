@@ -1,7 +1,6 @@
 /** 当前页面所需所有类型声明 **/
 
 import { UserBasicInfoParam } from "@/models/index.type";
-import { TreeDataInfo } from "@/pages/Project/ProjectManagement/index.type";
 
 export type { UserBasicInfoParam, Res } from "@/models/index.type";
 
@@ -12,13 +11,16 @@ export type TableRecordData = {
   serial: number; // 序号
   username: string; // 用户名
   password: string; // 密码
-  name: string | number; // 手机
-  org: number;
+  phone: string | number; // 手机
+  email: string; // 邮箱
+  desc: string; // 描述
+  conditions: number; // 是否启用 1启用 -1禁用
   control?: number; // 控制，传入的ID
   powers?: number[]; // 拥有的所有权限ID
 };
 
-export type operateType = "add" | "up";
+
+export type operateType = "add" | "see" | "up";
 
 export type ModalType = {
   operateType: operateType;
@@ -29,6 +31,7 @@ export type ModalType = {
 
 export type SearchInfo = {
   username: string | undefined; // 用户名
+  conditions: number | undefined; // 状态
 };
 
 export type RoleTreeInfo = {
@@ -38,8 +41,9 @@ export type RoleTreeInfo = {
   roleTreeDefault: number[]; // 用于角色树，默认需要选中的项
 };
 
-export type OrgInfo = {
-  id: number;
-  name: string;
+export type TreeDataInfo = {
+  key: string | number;
+  title: string;
+  children?: TreeDataInfo[];
+  parent?: TreeDataInfo;
 }
-

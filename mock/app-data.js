@@ -5,6 +5,8 @@
 //   timeout: "0-500",
 // });
 
+import { message } from "antd";
+import { get } from "lodash";
 /**
  * 模拟数据
  * 这个文件使用了兼容IE11的语法，
@@ -23,25 +25,50 @@ const menus = [
     url: "/home",
     parent: null,
     desc: "首页",
-    sorts: 0,
-    conditions: 1,
+    sorts: 0
   },
   {
     id: 2,
+    title: "项目管理",
+    icon: "icon-setting",
+    url: "/project",
+    parent: null,
+    desc: "项目管理目录分支",
+    sorts: 1
+  },
+  {
+    id: 3,
+    title: "项目管理",
+    icon: "icon-user",
+    url: "/project/management",
+    parent: 2,
+    desc: "项目管理/项目管理",
+    sorts: 0,
+  },
+  {
+    id: 4,
+    title: "流程管理",
+    icon: "icon-user",
+    url: "/procedure/management",
+    parent: 2,
+    desc: "项目管理/流程管理",
+    sorts: 1,
+  },
+  {
+    id: 5,
     title: "系统管理",
     icon: "icon-setting",
     url: "/system",
     parent: null,
     desc: "系统管理目录分支",
-    sorts: 1,
-    conditions: 1,
+    sorts: 2
   },
   {
-    id: 3,
+    id: 6,
     title: "用户管理",
     icon: "icon-user",
     url: "/system/useradmin",
-    parent: 2,
+    parent: 5,
     desc: "系统管理/用户管理",
     sorts: 0,
   },
@@ -337,26 +364,145 @@ const setPowersByRoleIds = function (ps) {
   return { status: 200, data: null, message: "success" };
 };
 
-// 条件分页查询用户列表
-const getUserList = function (p) {
-  const map = users.filter(function (item) {
-    let yeah = true;
-    const username = decode(p.username);
-    const conditions = Number(p.conditions);
-    if (username && !item.username.includes(username)) {
-      yeah = false;
-    }
-    if (conditions && item.conditions != conditions) {
-      yeah = false;
-    }
-    return yeah;
-  });
-  const pageNum = Number(p.pageNum); // 从第1页开始
-  const pageSize = Number(p.pageSize);
-  const res = map.slice((pageNum - 1) * pageSize, pageNum * pageSize);
+// 部门获取
+const getOrg = function() {
   return {
     status: 200,
-    data: { list: res, total: map.length },
+    data: [{
+      id: 1,
+      name: "test1"
+    }, {
+      id: 2,
+      name: "test2"
+    }],
+    message: "success"
+  }
+}
+
+const getProcedureList = function (p) {
+  const res = [{
+    id: 1,
+    name: "流程1",
+    config:[
+    {
+        "seq": 1,
+        "stageName": "合同签订阶段",
+        "nodes": [
+            {
+                "name": "中标公示结束",
+                "participants": [1,3,4]
+            },{
+                "name": "甲方合同签订时间",
+                "plannedDays": 30,
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 2,
+        "stageName": "合同交底阶段",
+        "nodes": [
+            {
+                "name": "合同交底会",
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 3,
+        "stageName": "技经中心完成成本下达",
+        "nodes": [
+            {
+                "name": "合同交底会",
+                "plannedDays": 10,
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 4,
+        "stageName": "分包、物资招标阶段",
+        "nodes": [
+            {
+                "name": "物资招标",
+                "participants": [1,3,4]
+            },{
+                "name": "分包招标",
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 5,
+        "stageName": "工程实施阶段",
+        "nodes": [
+            {
+                "name": "开工",
+                "participants": [1,3,4]
+            },{
+                "name": "竣工验收",
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 6,
+        "stageName": "总包结算阶段",
+        "nodes": [
+            {
+                "name": "报送结算资料",
+                "plannedDays": 10,
+                "participants": [1,3,4]
+            },{
+                "name": "总包结算初审",
+                "plannedDays": 45,
+                "participants": [1,3,4]
+            },{
+                "name": "总包结算",
+                "plannedDays": 15,
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 7,
+        "stageName": "分包结算阶段",
+        "nodes": [
+            {
+                "name": "分包结算",
+                "plannedDays": 60,
+                "participants": [1,3,4]
+            }
+        ]
+    },{
+        "seq": 8,
+        "stageName": "项目决算阶段",
+        "nodes": [
+            {
+                "name": "分公司启动决算工作",
+                "participants": [1,3,4]
+            },{
+                "name": "核实各自业务是否完成",
+                "plannedDays": 5,
+                "participants": [1,3,4]
+            },{
+                "name": "项目账务关闭",
+                "plannedDays": 5,
+                "participants": [1,3,4]
+            }
+        ]
+    }
+]
+  }]
+  return {
+    status: 200,
+    data: { list: res, total: res.length }, // 模拟数据
+    message: "success",
+  };
+}
+
+// 条件分页查询用户列表
+const getUserList = function (p) {
+  const pageNum = Number(p.pageNum); // 从第1页开始
+  const pageSize = Number(p.pageSize);
+  const res = users.slice((pageNum - 1) * pageSize, pageNum * pageSize);
+  return {
+    status: 200,
+    data: { list: res, total: users.length },
     message: "success",
   };
 };
@@ -454,6 +600,10 @@ export default function (obj) {
       return upUser(params);
     case "/api/delUser":
       return delUser(params);
+    case "/api/getOrgList":
+      return getOrg()
+    case "/api/getProcedureList":
+      return getProcedureList(params);
     default:
       return { status: 404, data: null, message: "api not found" };
   }

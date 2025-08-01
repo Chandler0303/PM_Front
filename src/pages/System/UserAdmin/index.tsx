@@ -19,7 +19,6 @@ import {
   Select,
 } from "antd";
 import {
-  EyeOutlined,
   EditOutlined,
   ToolOutlined,
   DeleteOutlined,
@@ -31,9 +30,6 @@ import {
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
-
-const { TextArea } = Input;
-const { Option } = Select;
 
 const formItemLayout = {
   labelCol: {
@@ -56,13 +52,13 @@ import RoleTree from "@/components/TreeChose/RoleTree";
 // ==================
 import {
   TableRecordData,
-  Page,
   operateType,
   ModalType,
   SearchInfo,
   RoleTreeInfo,
   UserBasicInfoParam,
   Res,
+  OrgInfo
 } from "./index.type";
 import { RootState, Dispatch } from "@/store";
 
@@ -81,6 +77,7 @@ function UserAdminContainer(): JSX.Element {
 
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
+  const [orgData, setOrgData] = useState<SelectData[]>([])
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
 
   // 分页相关参数
@@ -92,7 +89,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 模态框相关参数
   const [modal, setModal] = useSetState<ModalType>({
-    operateType: "add", // see查看，add添加，up修改
+    operateType: "add", // add添加，up修改
     nowData: null,
     modalShow: false,
     modalLoading: false,
@@ -100,11 +97,10 @@ function UserAdminContainer(): JSX.Element {
 
   // 搜索相关参数
   const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    username: undefined, // 用户名
-    conditions: undefined, // 状态
+    username: undefined // 账号
   });
 
-  // 角色树相关参数
+  // 权限树相关参数
   const [role, setRole] = useSetState<RoleTreeInfo>({
     roleData: [],
     roleTreeLoading: false,
@@ -114,23 +110,39 @@ function UserAdminContainer(): JSX.Element {
 
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
+    console.log("UserAdminContainer mounted");
+    onGetOrgData()
     onGetData(page);
   });
+
+  // 查询部门
+  async function onGetOrgData(): Promise<void> {
+    try {
+      const res = await dispatch.sys.getOrgList();
+      if (res && res.status === 200) {
+        setOrgData(res.data.map((item: OrgInfo) => {
+          return {
+            label: item.name,
+            value: item.id
+          }
+        }));
+      } else {
+        message.error(res?.message ?? "数据获取失败");
+      }
+    } finally {
+
+    }
+  }
 
   // 函数 - 查询当前页面所需列表数据
   async function onGetData(page: {
     pageNum: number;
     pageSize: number;
   }): Promise<void> {
-    if (!p.includes("user:query")) {
-      return;
-    }
-
     const params = {
       pageNum: page.pageNum,
       pageSize: page.pageSize,
-      username: searchInfo.username,
-      conditions: searchInfo.conditions,
+      username: searchInfo.username
     };
     setLoading(true);
     try {
@@ -157,11 +169,6 @@ function UserAdminContainer(): JSX.Element {
     if (e.target.value.length < 20) {
       setSearchInfo({ username: e.target.value });
     }
-  };
-
-  // 搜索 - 状态下拉框选择时触发
-  const searchConditionsChange = (v: number): void => {
-    setSearchInfo({ conditions: v });
   };
 
   // 搜索
@@ -199,10 +206,6 @@ function UserAdminContainer(): JSX.Element {
 
   /** 模态框确定 **/
   const onOk = async (): Promise<void> => {
-    if (modal.operateType === "see") {
-      onClose();
-      return;
-    }
     try {
       const values = await form.validateFields();
       setModal({
@@ -211,10 +214,8 @@ function UserAdminContainer(): JSX.Element {
       const params: UserBasicInfoParam = {
         username: values.username,
         password: values.password,
-        phone: values.phone,
-        email: values.email,
-        desc: values.desc,
-        conditions: values.conditions,
+        name: values.name,
+        org: values.org,
       };
       if (modal.operateType === "add") {
         // 新增
@@ -278,18 +279,25 @@ function UserAdminContainer(): JSX.Element {
     });
   };
 
-  /** 分配角色按钮点击，角色控件出现 **/
+  /** 分配权限按钮点击，权限控件出现 **/
   const onTreeShowClick = (record: TableRecordData): void => {
     setModal({
       nowData: record,
     });
     setRole({
+      roleData: [{
+        key: 1001,
+        title: "项目增加"
+      }, {
+        key: 1002,
+        title: "项目修改"
+      }],
       roleTreeShow: true,
-      roleTreeDefault: record.roles || [],
+      roleTreeDefault: record.powers || [],
     });
   };
 
-  // 分配角色确定
+  // 分配权限确定
   const onRoleOk = async (keys: string[]): Promise<void> => {
     if (!modal.nowData?.id) {
       message.error("未获取到该条数据id");
@@ -318,7 +326,7 @@ function UserAdminContainer(): JSX.Element {
     }
   };
 
-  // 分配角色树关闭
+  // 分配权限树关闭
   const onRoleClose = (): void => {
     setRole({
       roleTreeShow: false,
@@ -342,35 +350,22 @@ function UserAdminContainer(): JSX.Element {
       key: "serial",
     },
     {
-      title: "用户名",
+      title: "账号",
       dataIndex: "username",
       key: "username",
     },
     {
-      title: "电话",
-      dataIndex: "phone",
-      key: "phone",
+      title: "昵称",
+      dataIndex: "name",
+      key: "name",
     },
     {
-      title: "邮箱",
-      dataIndex: "email",
-      key: "email",
-    },
-    {
-      title: "描述",
-      dataIndex: "desc",
-      key: "desc",
-    },
-    {
-      title: "状态",
-      dataIndex: "conditions",
-      key: "conditions",
-      render: (v: number): JSX.Element =>
-        v === 1 ? (
-          <span style={{ color: "green" }}>启用</span>
-        ) : (
-          <span style={{ color: "red" }}>禁用</span>
-        ),
+      title: "部门",
+      dataIndex: "org",
+      key: "org",
+      render: (v: null, record: TableRecordData) => {
+        return orgData.find((item: SelectData) => item.value === record.org)?.label
+      }
     },
     {
       title: "操作",
@@ -379,18 +374,6 @@ function UserAdminContainer(): JSX.Element {
       render: (v: null, record: TableRecordData) => {
         const controls = [];
         const u = userinfo.userBasicInfo || { id: -1 };
-        p.includes("user:query") &&
-          controls.push(
-            <span
-              key="0"
-              className="control-btn green"
-              onClick={() => onModalShow(record, "see")}
-            >
-              <Tooltip placement="top" title="查看">
-                <EyeOutlined />
-              </Tooltip>
-            </span>
-          );
         p.includes("user:up") &&
           controls.push(
             <span
@@ -410,7 +393,7 @@ function UserAdminContainer(): JSX.Element {
               className="control-btn blue"
               onClick={() => onTreeShowClick(record)}
             >
-              <Tooltip placement="top" title="分配角色">
+              <Tooltip placement="top" title="分配权限">
                 <EditOutlined />
               </Tooltip>
             </span>
@@ -447,6 +430,7 @@ function UserAdminContainer(): JSX.Element {
   ];
 
   // table列表所需数据
+   // table列表所需数据
   const tableData = useMemo(() => {
     return data.map((item, index) => {
       return {
@@ -455,15 +439,14 @@ function UserAdminContainer(): JSX.Element {
         serial: index + 1 + (page.pageNum - 1) * page.pageSize,
         username: item.username,
         password: item.password,
-        phone: item.phone,
-        email: item.email,
-        desc: item.desc,
-        conditions: item.conditions,
+        name: item.name,
+        org: item.org,
         control: item.id,
-        roles: item.roles,
+        powers: item.powers,
       };
     });
   }, [page, data]);
+
 
   return (
     <div>
@@ -481,26 +464,14 @@ function UserAdminContainer(): JSX.Element {
           </li>
         </ul>
         <Divider type="vertical" />
-        {p.includes("user:query") && (
+        {
           <ul className="search-ul">
             <li>
               <Input
-                placeholder="请输入用户名"
+                placeholder="请输入账号"
                 onChange={searchUsernameChange}
                 value={searchInfo.username}
               />
-            </li>
-            <li>
-              <Select
-                placeholder="请选择状态"
-                allowClear
-                style={{ width: "200px" }}
-                onChange={searchConditionsChange}
-                value={searchInfo.conditions}
-              >
-                <Option value={1}>启用</Option>
-                <Option value={-1}>禁用</Option>
-              </Select>
             </li>
             <li>
               <Button
@@ -512,9 +483,9 @@ function UserAdminContainer(): JSX.Element {
               </Button>
             </li>
           </ul>
-        )}
+        }
       </div>
-      <div className="diy-table">
+      <div className="div-table">
         <Table
           columns={tableColumns}
           loading={loading}
@@ -532,30 +503,40 @@ function UserAdminContainer(): JSX.Element {
 
       {/* 新增&修改&查看 模态框 */}
       <Modal
-        title={{ add: "新增", up: "修改", see: "查看" }[modal.operateType]}
-        visible={modal.modalShow}
+        title={{ add: "新增", up: "修改" }[modal.operateType]}
+        open={modal.modalShow}
         onOk={onOk}
         onCancel={onClose}
         confirmLoading={modal.modalLoading}
       >
         <Form
           form={form}
-          initialValues={{
-            conditions: 1,
-          }}
         >
           <Form.Item
-            label="用户名"
+            label="账号"
             name="username"
             {...formItemLayout}
             rules={[
-              { required: true, whitespace: true, message: "必填" },
+              { required: true, whitespace: true, message: "请输入账号" },
               { max: 12, message: "最多输入12位字符" },
             ]}
           >
             <Input
-              placeholder="请输入用户名"
-              disabled={modal.operateType === "see"}
+              placeholder="请输入账号"
+              disabled={modal.operateType === "up"}
+            />
+          </Form.Item>
+          <Form.Item
+            label="昵称"
+            name="name"
+            {...formItemLayout}
+            rules={[
+              { required: true, whitespace: true, message: "请输入昵称" },
+              { max: 12, message: "最多输入12位字符" },
+            ]}
+          >
+            <Input
+              placeholder="请输入昵称"
             />
           </Form.Item>
           <Form.Item
@@ -563,95 +544,31 @@ function UserAdminContainer(): JSX.Element {
             name="password"
             {...formItemLayout}
             rules={[
-              { required: true, whitespace: true, message: "必填" },
+              { required: true, whitespace: true, message: "请输入密码" },
               { min: 6, message: "最少输入6位字符" },
               { max: 18, message: "最多输入18位字符" },
             ]}
           >
             <Input.Password
               placeholder="请输入密码"
-              disabled={modal.operateType === "see"}
             />
           </Form.Item>
           <Form.Item
-            label="电话"
-            name="phone"
+            label="部门"
+            name="org"
             {...formItemLayout}
-            rules={[
-              () => ({
-                validator: (rule, value) => {
-                  const v = value;
-                  if (v) {
-                    if (!tools.checkPhone(v)) {
-                      return Promise.reject("请输入有效的手机号码");
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
+            rules={[{ required: true, message: "请选择部门" }]}
           >
-            <Input
-              placeholder="请输入手机号"
-              maxLength={11}
-              disabled={modal.operateType === "see"}
+            <Select 
+              placeholder="请选择部门"
+              options={orgData}
             />
-          </Form.Item>
-          <Form.Item
-            label="邮箱"
-            name="email"
-            {...formItemLayout}
-            rules={[
-              () => ({
-                validator: (rule, value) => {
-                  const v = value;
-                  if (v) {
-                    if (!tools.checkEmail(v)) {
-                      return Promise.reject("请输入有效的邮箱地址");
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <Input
-              placeholder="请输入邮箱地址"
-              disabled={modal.operateType === "see"}
-            />
-          </Form.Item>
-          <Form.Item
-            label="描述"
-            name="desc"
-            {...formItemLayout}
-            rules={[{ max: 100, message: "最多输入100个字符" }]}
-          >
-            <TextArea
-              rows={4}
-              disabled={modal.operateType === "see"}
-              autoSize={{ minRows: 2, maxRows: 6 }}
-            />
-          </Form.Item>
-          <Form.Item
-            label="状态"
-            name="conditions"
-            {...formItemLayout}
-            rules={[{ required: true, message: "请选择状态" }]}
-          >
-            <Select disabled={modal.operateType === "see"}>
-              <Option key={1} value={1}>
-                启用
-              </Option>
-              <Option key={-1} value={-1}>
-                禁用
-              </Option>
-            </Select>
           </Form.Item>
         </Form>
       </Modal>
 
       <RoleTree
-        title={"分配角色"}
+        title={"分配权限"}
         data={role.roleData}
         visible={role.roleTreeShow}
         defaultKeys={role.roleTreeDefault}

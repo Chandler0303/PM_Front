@@ -10,7 +10,6 @@ import { Dispatch } from "@/store";
 
 import {
   Menu,
-  Role,
   PowerTree,
   SysState,
   Res,
@@ -19,7 +18,6 @@ import {
 
 const defaultState: SysState = {
   menus: [], // 所有的菜单信息（用于菜单管理，无视权限）
-  roles: [], // 所有的角色信息（用于Model赋予项，无视权限）
   powerTreeData: [], // 分配权限treeTable组件所需原始数据
 };
 
@@ -29,10 +27,6 @@ export default {
     // 保存所有菜单数据
     reducerSetMenus(state: SysState, payload: Menu[]): SysState {
       return { ...state, menus: payload };
-    },
-    // 保存所有角色数据
-    reducerSetRoles(state: SysState, payload: Role[]): SysState {
-      return { ...state, roles: payload };
     },
 
     // 保存所有权限数据
@@ -167,6 +161,36 @@ export default {
         message.error("网络错误，请重试");
       }
       return;
+    },
+
+    /**
+     * 获取流程管理
+     * **/
+    async getProcedureList() {
+      try {
+        const res: Res = await axios.get(
+          `/api/getProcedureList`
+        );
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
+     * 部门查询
+     */
+    async getOrgList() {
+      try {
+        const res: Res = await axios.get(
+          `/api/getOrgList`
+        );
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return
     },
 
     /**
