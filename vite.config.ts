@@ -11,6 +11,15 @@ function pathResolve(dir) {
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "./",
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:7001', // 你后端 API 的地址
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api/, '') // 可选：去掉 /api 前缀
+      }
+    }
+  },
   plugins: [
     react(),
     eslintPlugin({

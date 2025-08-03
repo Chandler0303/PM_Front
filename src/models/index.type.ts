@@ -7,7 +7,6 @@ export interface MenuParam {
   parent: number | null; // 父级ID
   desc: string; // 描述
   sorts: number; // 排序编号
-  conditions: number; // 状态，1启用，-1禁用
   children?: Menu[]; // 子菜单
 }
 
@@ -40,8 +39,10 @@ export interface Power extends PowerParam {
 
 // 用户数据类型
 export interface UserInfo {
-  userBasicInfo: UserBasicInfo | null; // 用户的基本信息
-  menus: Menu[]; // 拥有的所有菜单对象
+  admin: boolean;
+  name: string
+  id: number
+  permissions: string
   powers: Power[]; // 拥有的所有权限对象
 }
 
@@ -72,8 +73,7 @@ export interface PowerTree extends Menu {
 
 // ./app.js的state类型
 export interface AppState {
-  userinfo: UserInfo;
-  powersCode: string[];
+  userinfo: UserInfo | null
 }
 
 // ./sys.js的state类型
@@ -85,7 +85,7 @@ export interface SysState {
 // 接口的返回值类型
 export type Res =
   | {
-      status: number; // 状态，200成功
+      success: Boolean;
       data?: any; // 返回的数据
       message?: string; // 返回的消息
     }

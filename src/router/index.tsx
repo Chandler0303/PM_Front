@@ -70,10 +70,10 @@ function RouterCom(): JSX.Element {
      * sessionStorage中有user信息，但store中没有
      * 说明刷新了页面，需要重新同步user数据到store
      * **/
-    if (userTemp && !userinfo.userBasicInfo) {
-      dispatch.app.setUserInfo(JSON.parse(tools.uncompile(userTemp)));
+    if (userTemp && !userinfo) {
+      dispatch.app.setUserInfo(JSON.parse(userTemp));
     }
-  }, [dispatch.app, userinfo.userBasicInfo]);
+  }, [dispatch.app, userinfo]);
   return (
     <Routes>
       <Route

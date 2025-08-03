@@ -8,13 +8,13 @@ import axios from "axios";
  * 不需要下面这些mock配置，仅本地用
  * 正式打包需要去掉
  * */
-import Mock from "mockjs";
-// @ts-ignore
-import mock from "../../mock/app-data.js";
-Mock.mock(/\/api.*/, (options: any) => {
-  const res = mock(options);
-  return res;
-});
+// import Mock from "mockjs";
+// // @ts-ignore
+// import mock from "../../mock/app-data.js";
+// Mock.mock(/\/api.*/, (options: any) => {
+//   const res = mock(options);
+//   return res;
+// });
 
 /**
  * 根据不同环境设置不同的请求地址

@@ -66,6 +66,7 @@ import { RootState, Dispatch } from "@/store";
 // CSS
 // ==================
 import "./index.less";
+import AuthWrapper from "@/components/AuthWrapper";
 
 // ==================
 // 本组件
@@ -119,7 +120,7 @@ function UserAdminContainer(): JSX.Element {
   async function onGetOrgData(): Promise<void> {
     try {
       const res = await dispatch.sys.getOrgList();
-      if (res && res.status === 200) {
+      if (res && res.success) {
         setOrgData(res.data.map((item: OrgInfo) => {
           return {
             label: item.name,
@@ -147,12 +148,12 @@ function UserAdminContainer(): JSX.Element {
     setLoading(true);
     try {
       const res = await dispatch.sys.getUserList(tools.clearNull(params));
-      if (res && res.status === 200) {
-        setData(res.data.list);
+      if (res && res.success) {
+        setData(res.data);
         setPage({
           pageNum: page.pageNum,
           pageSize: page.pageSize,
-          total: res.data.total,
+          total: res.data.length,
         });
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -372,59 +373,47 @@ function UserAdminContainer(): JSX.Element {
       key: "control",
       width: 200,
       render: (v: null, record: TableRecordData) => {
-        const controls = [];
-        const u = userinfo.userBasicInfo || { id: -1 };
-        p.includes("user:up") &&
-          controls.push(
-            <span
-              key="1"
-              className="control-btn blue"
-              onClick={() => onModalShow(record, "up")}
-            >
-              <Tooltip placement="top" title="修改">
-                <ToolOutlined />
-              </Tooltip>
-            </span>
-          );
-        p.includes("user:role") &&
-          controls.push(
-            <span
-              key="2"
-              className="control-btn blue"
-              onClick={() => onTreeShowClick(record)}
-            >
-              <Tooltip placement="top" title="分配权限">
-                <EditOutlined />
-              </Tooltip>
-            </span>
-          );
 
-        p.includes("user:del") &&
-          u.id !== record.id &&
-          controls.push(
-            <Popconfirm
-              key="3"
-              title="确定删除吗?"
-              onConfirm={() => onDel(record.id)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <span className="control-btn red">
-                <Tooltip placement="top" title="删除">
-                  <DeleteOutlined />
+        return (
+          <>
+            <AuthWrapper code="edit">
+              <span
+                key="1"
+                className="control-btn blue"
+                onClick={() => onModalShow(record, "up")}
+              >
+                <Tooltip placement="top" title="修改">
+                  <ToolOutlined />
                 </Tooltip>
               </span>
-            </Popconfirm>
-          );
-
-        const result: JSX.Element[] = [];
-        controls.forEach((item, index) => {
-          if (index) {
-            result.push(<Divider key={`line${index}`} type="vertical" />);
-          }
-          result.push(item);
-        });
-        return result;
+            </AuthWrapper>
+            <AuthWrapper code="edit">
+              <span
+                key="2"
+                className="control-btn blue"
+                onClick={() => onTreeShowClick(record)}
+              >
+                <Tooltip placement="top" title="分配权限">
+                  <EditOutlined />
+                </Tooltip>
+              </span>
+            </AuthWrapper>
+            <AuthWrapper code="del">
+              <Popconfirm
+                key="3"
+                title="确定删除吗?"
+                onConfirm={() => onDel(record.id)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <span className="control-btn red">
+                  <Tooltip placement="top" title="删除">
+                    <DeleteOutlined />
+                  </Tooltip>
+                </span>
+              </Popconfirm>
+            </AuthWrapper></>
+        );
       },
     },
   ];
@@ -453,14 +442,15 @@ function UserAdminContainer(): JSX.Element {
       <div className="g-search">
         <ul className="search-func">
           <li>
-            <Button
-              type="primary"
-              icon={<PlusCircleOutlined />}
-              disabled={!p.includes("user:add")}
-              onClick={() => onModalShow(null, "add")}
-            >
-              添加用户
-            </Button>
+            <AuthWrapper code="add">
+              <Button
+                type="primary"
+                icon={<PlusCircleOutlined />}
+                onClick={() => onModalShow(null, "add")}
+              >
+                添加用户
+              </Button>
+            </AuthWrapper>
           </li>
         </ul>
         <Divider type="vertical" />

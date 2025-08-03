@@ -40,7 +40,7 @@ interface Element {
 
 interface Props {
   collapsed: boolean; // 菜单的状态
-  userinfo: UserInfo; // 用户信息
+  userinfo: UserInfo | null; // 用户信息
   onToggle: () => void; // 菜单收起与展开状态切换
   onLogout: () => void; // 退出登录
 }
@@ -86,7 +86,7 @@ export default function HeaderCom(props: Props): JSX.Element {
     }
   };
 
-  const u = props.userinfo.userBasicInfo;
+  const u = props.userinfo;
   return (
     <Header className="header">
       <MenuFoldOutlined
@@ -160,7 +160,7 @@ export default function HeaderCom(props: Props): JSX.Element {
           >
             <div className="userhead all_center">
               <SmileOutlined />
-              <span className="username">{u.username}</span>
+              <span className="username">{u.name}</span>
             </div>
           </Dropdown>
         ) : (

@@ -30,8 +30,8 @@ function ProcedureManagementContainer(): JSX.Element{
   async function onGetData(): Promise<void> {
     try {
       const res = await dispatch.sys.getProcedureList();
-      if (res && res.status === 200) {
-        setSelectData(res.data.list.map((item: ProcedureInfo) => {
+      if (res && res.success) {
+        setSelectData(res.data.map((item: ProcedureInfo) => {
           return {
             label: item.name,
             value: item.id,
@@ -54,8 +54,8 @@ function ProcedureManagementContainer(): JSX.Element{
 
     try {
       const res = await dispatch.sys.getUserList(tools.clearNull(params));
-      if (res && res.status === 200) {
-        setUserData(res.data.list.map((item: UserInfo) => {
+      if (res && res.success) {
+        setUserData(res.data.map((item: UserInfo) => {
           return {
             label: item.name,
             value: item.username,

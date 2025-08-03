@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Outlet } from "react-router-dom";
 import { Layout, message } from "antd";
-
+import { menus } from "@/router/mens";
 // ==================
 // 自定义的东西
 // ==================
@@ -46,7 +46,7 @@ function BasicLayoutCom(): JSX.Element {
 
   return (
     <Layout className="page-basic" hasSider>
-      <MenuCom data={userinfo.menus} collapsed={collapsed} />
+      <MenuCom data={menus} collapsed={collapsed} />
 
       <Layout>
         <Header
@@ -55,7 +55,7 @@ function BasicLayoutCom(): JSX.Element {
           onToggle={() => setCollapsed(!collapsed)}
           onLogout={onLogout}
         />
-        <Bread menus={userinfo.menus} />
+        <Bread menus={menus} />
         <Content className="content">
           <Outlet />
         </Content>

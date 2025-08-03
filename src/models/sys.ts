@@ -169,7 +169,7 @@ export default {
     async getProcedureList() {
       try {
         const res: Res = await axios.get(
-          `/api/getProcedureList`
+          `/api/project/procedures`
         );
         return res;
       } catch (err) {
@@ -184,7 +184,7 @@ export default {
     async getOrgList() {
       try {
         const res: Res = await axios.get(
-          `/api/getOrgList`
+          `/api/org/list`
         );
         return res;
       } catch (err) {
@@ -204,7 +204,7 @@ export default {
     }) {
       try {
         const res: Res = await axios.get(
-          `/api/getUserList?${qs.stringify(params)}`
+          `/api/user/list?${qs.stringify(params)}`
         );
         return res;
       } catch (err) {

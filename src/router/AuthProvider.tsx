@@ -4,10 +4,7 @@ import React, { useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-
-import type { Menu } from "@/models/index.type";
-
-import tools from "@/util/tools";
+import { menus } from "./mens";
 
 interface Props {
   children: JSX.Element;
@@ -16,8 +13,7 @@ interface Props {
 // 未登录的用户，重定向到登录页
 export function AuthNoLogin(props: Props) {
   const userinfo = useSelector((state: RootState) => state.app.userinfo);
-
-  if (!userinfo.userBasicInfo) {
+  if (!userinfo) {
     return <Navigate to="/user/login" replace />;
   }
 
@@ -28,7 +24,7 @@ export function AuthNoLogin(props: Props) {
 export function AuthWithLogin(props: Props) {
   const userinfo = useSelector((state: RootState) => state.app.userinfo);
 
-  if (userinfo.userBasicInfo) {
+  if (userinfo) {
     return <Navigate to="/home" replace />;
   }
   return props.children;
@@ -41,14 +37,6 @@ export function AuthNoPower(props: Props) {
 
   // 判断当前用户是否有该路由权限，如果没有就跳转至401页
   const isHavePower = useMemo(() => {
-    let menus: Menu[] = [];
-    if (userinfo.menus && userinfo.menus.length) {
-      menus = userinfo.menus;
-    } else if (sessionStorage.getItem("userinfo")) {
-      menus = JSON.parse(
-        tools.uncompile(sessionStorage.getItem("userinfo") || "[]")
-      ).menus;
-    }
     const m: string[] = menus.map((item) => item.url); // 当前用户拥有的所有菜单
 
     if (m.includes(location.pathname)) {
@@ -56,8 +44,6 @@ export function AuthNoPower(props: Props) {
     }
     return false;
   }, [userinfo, location.pathname]);
-
-  console.log("auth:", userinfo, isHavePower, location.pathname);
 
   if (!isHavePower && location.pathname !== "/401") {
     return <Navigate to="/401" replace />;

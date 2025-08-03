@@ -71,14 +71,13 @@ import { RootState, Dispatch } from "@/store";
 import "./index.less";
 import { ProcedureInfo } from "../ProcedureManagement/index.type";
 import { ColumnsType } from "antd/lib/table";
+import AuthWrapper from "@/components/AuthWrapper";
 
 // ==================
 // 本组件
 // ==================
 function UserAdminContainer(): JSX.Element {
   const dispatch = useDispatch<Dispatch>();
-  const userinfo = useSelector((state: RootState) => state.app.userinfo);
-  const p = useSelector((state: RootState) => state.app.powersCode);
 
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
@@ -162,70 +161,7 @@ function UserAdminContainer(): JSX.Element {
       key: "control",
       width: 200,
       render: (v: null, record: TableRecordData) => {
-        const controls = [];
-        const u = userinfo.userBasicInfo || { id: -1 };
-        controls.push(
-          <span
-            key="0"
-            className="control-btn green"
-            onClick={() => onModalShow(record, "see")}
-          >
-            <Tooltip placement="top" title="查看">
-              <EyeOutlined />
-            </Tooltip>
-          </span>
-        );
-        p.includes("user:up") &&
-          controls.push(
-            <span
-              key="1"
-              className="control-btn blue"
-              onClick={() => onModalShow(record, "up")}
-            >
-              <Tooltip placement="top" title="修改">
-                <ToolOutlined />
-              </Tooltip>
-            </span>
-          );
-        p.includes("user:role") &&
-          controls.push(
-            <span
-              key="2"
-              className="control-btn blue"
-              onClick={() => onTreeShowClick(record)}
-            >
-              <Tooltip placement="top" title="分配角色">
-                <EditOutlined />
-              </Tooltip>
-            </span>
-          );
-
-        p.includes("user:del") &&
-          u.id !== record.id &&
-          controls.push(
-            <Popconfirm
-              key="3"
-              title="确定删除吗?"
-              onConfirm={() => onDel(record.id)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <span className="control-btn red">
-                <Tooltip placement="top" title="删除">
-                  <DeleteOutlined />
-                </Tooltip>
-              </span>
-            </Popconfirm>
-          );
-
-        const result: JSX.Element[] = [];
-        controls.forEach((item, index) => {
-          if (index) {
-            result.push(<Divider key={`line${index}`} type="vertical" />);
-          }
-          result.push(item);
-        });
-        return result;
+        return 1
       },
     },
   ])
@@ -279,8 +215,8 @@ function UserAdminContainer(): JSX.Element {
     setLoading(true);
     try {
       const res = await dispatch.sys.getUserList(tools.clearNull(params));
-      if (res && res.status === 200) {
-        setData(res.data.list);
+      if (res && res.success) {
+        setData(res.data);
         setPage({
           pageNum: page.pageNum,
           pageSize: page.pageSize,
@@ -297,9 +233,9 @@ function UserAdminContainer(): JSX.Element {
   async function onGetProcedureData(): Promise<void> {
       try {
         const res = await dispatch.sys.getProcedureList();
-        if (res && res.status === 200) {
-          setProcedureData(res.data.list);
-          tableColumnsHanle(res.data.list)
+        if (res && res.success) {
+          setProcedureData(res.data);
+          tableColumnsHanle(res.data)
         } else {
           message.error(res?.message ?? "数据获取失败");
         }
@@ -552,14 +488,15 @@ function UserAdminContainer(): JSX.Element {
       <div className="g-search">
         <ul className="search-func">
           <li>
-            <Button
-              type="primary"
-              icon={<PlusCircleOutlined />}
-              disabled={!p.includes("user:add")}
-              onClick={() => onModalShow(null, "add")}
-            >
-              添加用户
-            </Button>
+            <AuthWrapper code="1001">
+              <Button
+                type="primary"
+                icon={<PlusCircleOutlined />}
+                onClick={() => onModalShow(null, "add")}
+              >
+                添加项目
+              </Button>
+            </AuthWrapper>
           </li>
         </ul>
         <Divider type="vertical" />
