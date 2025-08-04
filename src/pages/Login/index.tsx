@@ -3,8 +3,8 @@
 // ==================
 // 所需的各种插件
 // ==================
-import React, { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 // ==================
@@ -19,7 +19,6 @@ import LogoImg from "@/assets/logo.png";
 // 类型声明
 // ==================
 import { Dispatch } from "@/store";
-import { Menu, Power, UserBasicInfo, Res } from "@/models/index.type";
 
 // ==================
 // CSS
@@ -44,20 +43,16 @@ function LoginContainer(): JSX.Element {
       const res = await dispatch.app.onLogin(values);
 
       if (res && res.success) {
-        const userRes = await dispatch.app.getUserInfo()
+        const userRes = await dispatch.app.getUserInfo();
 
         if (userRes && userRes.success) {
           message.success("登录成功");
           setLoading(false);
-          
-          sessionStorage.setItem(
-            "userinfo",
-            JSON.stringify(userRes.data)
-          );
+
+          sessionStorage.setItem("userinfo", JSON.stringify(userRes.data));
           await dispatch.app.setUserInfo(userRes.data);
           navigate("/"); // 跳转到主页
         }
-        
       } else {
         message.error(res?.message ?? "登录失败");
         setLoading(false);
@@ -66,10 +61,6 @@ function LoginContainer(): JSX.Element {
       // 验证未通过
     }
   };
-
-
-
-
 
   return (
     <div className="page-login">
@@ -98,7 +89,7 @@ function LoginContainer(): JSX.Element {
                 prefix={<UserOutlined style={{ fontSize: 13 }} />}
                 size="large"
                 id="username" // 为了获取焦点
-                placeholder="admin/user"
+                placeholder="admin"
                 onPressEnter={onSubmit}
               />
             </Form.Item>
@@ -113,7 +104,7 @@ function LoginContainer(): JSX.Element {
                 prefix={<KeyOutlined style={{ fontSize: 13 }} />}
                 size="large"
                 type="password"
-                placeholder="123456/123456"
+                placeholder="123"
                 onPressEnter={onSubmit}
               />
             </Form.Item>

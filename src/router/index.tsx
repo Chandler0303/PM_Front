@@ -107,7 +107,7 @@ function RouterCom(): JSX.Element {
           }
         />
         <Route
-          path="procedure/management"
+          path="project/procedureMg"
           element={
             <AuthNoPower>
               <ProcedureManagement />

@@ -3,7 +3,7 @@
 import { UserBasicInfoParam } from "@/models/index.type";
 import { TreeDataInfo } from "@/pages/Project/ProjectManagement/index.type";
 
-export type { UserBasicInfoParam, Res } from "@/models/index.type";
+export type { UserBasicInfoParam } from "@/models/index.type";
 
 // 列表table的数据类型
 export type TableRecordData = {
@@ -13,9 +13,8 @@ export type TableRecordData = {
   username: string; // 用户名
   password: string; // 密码
   name: string | number; // 手机
-  org: number;
-  control?: number; // 控制，传入的ID
-  powers?: number[]; // 拥有的所有权限ID
+  org: any;
+  permissions: string;
 };
 
 export type operateType = "add" | "up";
@@ -41,5 +40,4 @@ export type RoleTreeInfo = {
 export type OrgInfo = {
   id: number;
   name: string;
-}
-
+};

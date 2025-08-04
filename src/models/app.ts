@@ -6,28 +6,22 @@
 import axios from "@/util/axios"; // 自己写的工具函数，封装了请求数据的通用接口
 import { message } from "antd";
 import { Dispatch, RootState } from "@/store";
-import {
-  Menu,
-  Power,
-  UserInfo,
-  AppState,
-  Res,
-} from "./index.type";
+import { UserInfo, AppState } from "./index.type";
 
 const defaultState: AppState = {
-  userinfo: null // 当前用户基本信息
+  userinfo: null, // 当前用户基本信息
 };
 export default {
   state: defaultState,
   reducers: {
     reducerUserInfo(state: AppState, payload: UserInfo) {
       return {
-        userinfo: payload
+        userinfo: payload,
       };
     },
     reducerLogout(state: AppState) {
       return {
-        userinfo: null
+        userinfo: null,
       };
     },
   },
@@ -85,7 +79,6 @@ export default {
       /** 2.重新查询角色信息 **/
       // const userinfo: UserInfo = rootState.app.userinfo;
 
-      
       // const menus: Menu[] = userinfo.menus
 
       // const powers: Power[] = userinfo.powers

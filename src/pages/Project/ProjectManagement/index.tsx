@@ -3,36 +3,27 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState, useMemo, Children } from "react";
+import React, { useState, useMemo } from "react";
 import { useSetState, useMount } from "react-use";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
   Form,
   Button,
   Input,
   Table,
   message,
-  Popconfirm,
   Modal,
-  Tooltip,
   Divider,
   Select,
+  DatePicker,
 } from "antd";
-import {
-  EyeOutlined,
-  EditOutlined,
-  ToolOutlined,
-  DeleteOutlined,
-  PlusCircleOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { PlusCircleOutlined, SearchOutlined } from "@ant-design/icons";
 
 // ==================
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 const formItemLayout = {
@@ -47,11 +38,6 @@ const formItemLayout = {
 };
 
 // ==================
-// 所需的组件
-// ==================
-import RoleTree from "@/components/TreeChose/RoleTree";
-
-// ==================
 // 类型声明
 // ==================
 import {
@@ -59,11 +45,10 @@ import {
   operateType,
   ModalType,
   SearchInfo,
-  RoleTreeInfo,
-  UserBasicInfoParam,
-  Res,
+  CompanyInfo,
+  ProjectInfo,
 } from "./index.type";
-import { RootState, Dispatch } from "@/store";
+import { Dispatch } from "@/store";
 
 // ==================
 // CSS
@@ -72,47 +57,54 @@ import "./index.less";
 import { ProcedureInfo } from "../ProcedureManagement/index.type";
 import { ColumnsType } from "antd/lib/table";
 import AuthWrapper from "@/components/AuthWrapper";
+import pmApi from "@/api/pm";
+import sysApi from "@/api/sys";
+import { projectStatusDict, projectTypeDict } from "@/common/dict";
+import { UserInfo } from "@/models/index.type";
 
 // ==================
 // 本组件
 // ==================
-function UserAdminContainer(): JSX.Element {
+function ProjectMgContainer(): JSX.Element {
   const dispatch = useDispatch<Dispatch>();
+
+  let userList: UserInfo[] = [];
 
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
-  const [procedureData, setProcedureData] = useState<ProcedureInfo[]>([])
+  const [companyList, setCompanyList] = useState<SelectData[]>([]);
+  const [procedureList, setProcedureList] = useState<ProcedureInfo[]>();
   const [columns, setColumns] = useState<ColumnsType<TableRecordData>>([
     {
       title: "序号",
       dataIndex: "serial",
       key: "serial",
-      width: 150
+      width: 150,
     },
     {
       title: "工程编号",
       dataIndex: "username",
       key: "username",
-      width: 150
+      width: 150,
     },
     {
       title: "年度",
       dataIndex: "year",
       key: "year",
-      width: 150
+      width: 150,
     },
     {
       title: "工程名称",
       dataIndex: "name",
       key: "name",
-      width: 150
+      width: 150,
     },
     {
       title: "合同金额",
       dataIndex: "amount",
       key: "amount",
-      width: 150
+      width: 150,
     },
     {
       title: "项目类型",
@@ -130,7 +122,7 @@ function UserAdminContainer(): JSX.Element {
       title: "项目阶段",
       dataIndex: "stage",
       key: "stage",
-      width: 150
+      width: 150,
     },
     {
       title: "工程状态",
@@ -151,20 +143,20 @@ function UserAdminContainer(): JSX.Element {
       width: 150,
     },
     {
-      title: '时间点',
-      key: 'durationLabel',
-      dataIndex: 'durationLabel',
-      width: 150
+      title: "时间点",
+      key: "durationLabel",
+      dataIndex: "durationLabel",
+      width: 150,
     },
     {
       title: "操作",
       key: "control",
       width: 200,
       render: (v: null, record: TableRecordData) => {
-        return 1
+        return 1;
       },
     },
-  ])
+  ]);
 
   // 分页相关参数
   const [page, setPage] = useSetState<Page>({
@@ -187,18 +179,12 @@ function UserAdminContainer(): JSX.Element {
     conditions: undefined, // 状态
   });
 
-  // 角色树相关参数
-  const [role, setRole] = useSetState<RoleTreeInfo>({
-    roleData: [],
-    roleTreeLoading: false,
-    roleTreeShow: false,
-    roleTreeDefault: [],
-  });
-
   // 生命周期 - 组件挂载时触发一次
-  useMount(() => {
+  useMount(async () => {
+    onGetCompanyData();
+    onGetUserData();
+    onGetProcedureData();
     onGetData(page);
-    onGetProcedureData()
   });
 
   // 函数 - 查询当前页面所需列表数据
@@ -209,18 +195,16 @@ function UserAdminContainer(): JSX.Element {
     const params = {
       pageNum: page.pageNum,
       pageSize: page.pageSize,
-      username: searchInfo.username,
-      conditions: searchInfo.conditions,
     };
     setLoading(true);
     try {
-      const res = await dispatch.sys.getUserList(tools.clearNull(params));
+      const res = await pmApi.getProjectList(tools.clearNull(params));
       if (res && res.success) {
-        setData(res.data);
+        setData([]);
         setPage({
           pageNum: page.pageNum,
           pageSize: page.pageSize,
-          total: res.data.total,
+          total: 0,
         });
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -231,17 +215,54 @@ function UserAdminContainer(): JSX.Element {
   }
 
   async function onGetProcedureData(): Promise<void> {
-      try {
-        const res = await dispatch.sys.getProcedureList();
-        if (res && res.success) {
-          setProcedureData(res.data);
-          tableColumnsHanle(res.data)
-        } else {
-          message.error(res?.message ?? "数据获取失败");
-        }
-      } finally {
+    try {
+      const res = await pmApi.getProcedureList();
+      if (res && res.success) {
+        setProcedureList(res.data);
+        tableColumnsHanle();
+      } else {
+        message.error(res?.message ?? "数据获取失败");
       }
+    } finally {
     }
+  }
+
+  // 分公司
+  async function onGetCompanyData(): Promise<void> {
+    try {
+      const res = await pmApi.getCompanyList();
+      if (res && res.success) {
+        setCompanyList(
+          res.data.map((item: CompanyInfo) => {
+            return {
+              label: item.name,
+              value: item.id,
+            };
+          })
+        );
+      } else {
+        message.error(res?.message ?? "数据获取失败");
+      }
+    } finally {
+    }
+  }
+
+  // 用户
+  async function onGetUserData(): Promise<void> {
+    const params = {
+      pageNum: 1,
+      pageSize: 9999,
+    };
+    try {
+      const res = await sysApi.getUserList(tools.clearNull(params));
+      if (res && res.success) {
+        userList = res.data;
+      } else {
+        message.error(res?.message ?? "数据获取失败");
+      }
+    } finally {
+    }
+  }
 
   // 搜索 - 名称输入框值改变时触发
   const searchUsernameChange = (
@@ -292,28 +313,20 @@ function UserAdminContainer(): JSX.Element {
 
   /** 模态框确定 **/
   const onOk = async (): Promise<void> => {
-    if (modal.operateType === "see") {
-      onClose();
-      return;
-    }
     try {
       const values = await form.validateFields();
       setModal({
         modalLoading: true,
       });
-      const params: UserBasicInfoParam = {
-        username: values.username,
-        password: values.password,
-        phone: values.phone,
-        email: values.email,
-        desc: values.desc,
-        conditions: values.conditions,
+      const params: ProjectInfo = {
+        ...values,
       };
       if (modal.operateType === "add") {
         // 新增
         try {
-          const res: Res | undefined = await dispatch.sys.addUser(params);
-          if (res && res.status === 200) {
+          params.stages = createStages();
+          const res: Res | undefined = await pmApi.addProject(params);
+          if (res && res.success) {
             message.success("添加成功");
             onGetData(page);
             onClose();
@@ -330,7 +343,7 @@ function UserAdminContainer(): JSX.Element {
         params.id = modal.nowData?.id;
         try {
           const res: Res | undefined = await dispatch.sys.upUser(params);
-          if (res && res.status === 200) {
+          if (res && res.success) {
             message.success("修改成功");
             onGetData(page);
             onClose();
@@ -346,6 +359,25 @@ function UserAdminContainer(): JSX.Element {
     } catch {
       // 未通过校验
     }
+  };
+
+  const createStages = () => {
+    const stages =
+      procedureList && procedureList[0]
+        ? JSON.parse(procedureList[0].config).stages
+        : [];
+    return stages.map((stage: any) => {
+      return {
+        name: stage.stageName,
+        seq: stage.seq,
+        nodes: stage.nodes.map((node: any) => {
+          return {
+            name: node.name,
+            seq: node.seq,
+          };
+        }),
+      };
+    });
   };
 
   // 删除某一条数据
@@ -371,53 +403,6 @@ function UserAdminContainer(): JSX.Element {
     });
   };
 
-  /** 分配角色按钮点击，角色控件出现 **/
-  const onTreeShowClick = (record: TableRecordData): void => {
-    setModal({
-      nowData: record,
-    });
-    setRole({
-      roleTreeShow: true,
-      roleTreeDefault: record.powers || [],
-    });
-  };
-
-  // 分配角色确定
-  const onRoleOk = async (keys: string[]): Promise<void> => {
-    if (!modal.nowData?.id) {
-      message.error("未获取到该条数据id");
-      return;
-    }
-    const params = {
-      id: modal.nowData.id,
-      roles: keys.map((item) => Number(item)),
-    };
-    setRole({
-      roleTreeLoading: true,
-    });
-    try {
-      const res: Res = await dispatch.sys.setUserRoles(params);
-      if (res && res.status === 200) {
-        message.success("分配成功");
-        onGetData(page);
-        onRoleClose();
-      } else {
-        message.error(res?.message ?? "操作失败");
-      }
-    } finally {
-      setRole({
-        roleTreeLoading: false,
-      });
-    }
-  };
-
-  // 分配角色树关闭
-  const onRoleClose = (): void => {
-    setRole({
-      roleTreeShow: false,
-    });
-  };
-
   // 表格页码改变
   const onTablePageChange = (pageNum: number, pageSize: number): void => {
     onGetData({ pageNum, pageSize });
@@ -431,38 +416,51 @@ function UserAdminContainer(): JSX.Element {
     return window.btoa(unescape(encodeURIComponent(str)));
   }
 
-  const tableColumnsHanle = (list: ProcedureInfo[]) => {
-    const config = list[0].config
+  const tableColumnsHanle = () => {
+    const stages =
+      procedureList && procedureList[0]
+        ? JSON.parse(procedureList[0].config).stages
+        : [];
 
-    const oneColumns = config.map(stage => {
+    const oneColumns = stages.map((stage: any) => {
       return {
-         title: stage.stageName,
-         children: stage.nodes.map((node: any) => {
-            return {
-              title: '负责人',
-              children: [
-                {
-                  title: node.name,
-                  children: [{
-                    title: node.plannedDays || '--',
+        title: stage.stageName,
+        children: stage.nodes.map((node: any) => {
+          return {
+            title: userHandle(node.participants),
+            children: [
+              {
+                title: node.name,
+                children: [
+                  {
+                    title: node.plannedDays || "--",
                     key: chineseToBase64Key(node.stageName),
                     dataIndex: chineseToBase64Key(node.stageName),
-                    width: 150
-                  }]
-                }
-              ]
-              
-            }
-         })
-          
-      }
-    })
+                    width: 150,
+                  },
+                ],
+              },
+            ],
+          };
+        }),
+      };
+    });
     setColumns([
       ...columns.slice(0, columns.length - 1),
       ...oneColumns,
-      columns[columns.length - 1]
-    ])
-  }
+      columns[columns.length - 1],
+    ]);
+  };
+
+  const userHandle = (users: string[]) => {
+    return users
+      .map((name) => {
+        const user = userList.find((u) => u.username === name);
+        return user ? user.name : "";
+      })
+      .filter((u) => u)
+      .join("，");
+  };
 
   // table列表所需数据
   const tableData = useMemo(() => {
@@ -538,7 +536,7 @@ function UserAdminContainer(): JSX.Element {
           columns={columns}
           loading={loading}
           dataSource={tableData}
-          scroll={{ x: 'max-content', y: 55 * 5 }}
+          scroll={{ x: "max-content", y: 55 * 5 }}
           bordered
           pagination={{
             total: page.total,
@@ -551,9 +549,9 @@ function UserAdminContainer(): JSX.Element {
         />
       </div>
 
-      {/* 新增&修改&查看 模态框 */}
+      {/* 新增&修改 模态框 */}
       <Modal
-        title={{ add: "新增", up: "修改", see: "查看" }[modal.operateType]}
+        title={{ add: "新增", up: "修改" }[modal.operateType]}
         open={modal.modalShow}
         onOk={onOk}
         onCancel={onClose}
@@ -562,126 +560,86 @@ function UserAdminContainer(): JSX.Element {
         <Form
           form={form}
           initialValues={{
-            conditions: 1,
+            type: 1,
           }}
         >
           <Form.Item
-            label="用户名"
-            name="username"
+            label="工程编号"
+            name="projCode"
             {...formItemLayout}
-            rules={[
-              { required: true, whitespace: true, message: "必填" },
-              { max: 12, message: "最多输入12位字符" },
-            ]}
+            rules={[{ required: true, whitespace: true, message: "必填" }]}
           >
-            <Input
-              placeholder="请输入用户名"
-              disabled={modal.operateType === "see"}
+            <Input placeholder="请输入工程编号" />
+          </Form.Item>
+
+          <Form.Item
+            label="年度"
+            name="year"
+            {...formItemLayout}
+            rules={[{ required: true, message: "必填" }]}
+          >
+            <DatePicker
+              style={{ width: "100%" }}
+              picker="year"
+              format="YYYY"
+              placeholder="请选择年份"
             />
           </Form.Item>
+
           <Form.Item
-            label="密码"
-            name="password"
+            label="工程名称"
+            name="name"
             {...formItemLayout}
-            rules={[
-              { required: true, whitespace: true, message: "必填" },
-              { min: 6, message: "最少输入6位字符" },
-              { max: 18, message: "最多输入18位字符" },
-            ]}
+            rules={[{ required: true, whitespace: true, message: "必填" }]}
           >
-            <Input.Password
-              placeholder="请输入密码"
-              disabled={modal.operateType === "see"}
-            />
+            <Input placeholder="请输入工程名称" />
           </Form.Item>
+
           <Form.Item
-            label="电话"
-            name="phone"
+            label="合同金额"
+            name="amount"
             {...formItemLayout}
-            rules={[
-              () => ({
-                validator: (rule, value) => {
-                  const v = value;
-                  if (v) {
-                    if (!tools.checkPhone(v)) {
-                      return Promise.reject("请输入有效的手机号码");
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
+            rules={[{ required: true, whitespace: true, message: "必填" }]}
           >
-            <Input
-              placeholder="请输入手机号"
-              maxLength={11}
-              disabled={modal.operateType === "see"}
-            />
+            <Input placeholder="请输入合同金额" />
           </Form.Item>
+
           <Form.Item
-            label="邮箱"
-            name="email"
+            label="项目类型"
+            name="type"
             {...formItemLayout}
-            rules={[
-              () => ({
-                validator: (rule, value) => {
-                  const v = value;
-                  if (v) {
-                    if (!tools.checkEmail(v)) {
-                      return Promise.reject("请输入有效的邮箱地址");
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
+            rules={[{ required: true, message: "请选择项目类型" }]}
           >
-            <Input
-              placeholder="请输入邮箱地址"
-              disabled={modal.operateType === "see"}
-            />
+            <Select
+              options={projectTypeDict}
+              placeholder="请选择项目类型"
+            ></Select>
           </Form.Item>
+
           <Form.Item
-            label="描述"
-            name="desc"
-            {...formItemLayout}
-            rules={[{ max: 100, message: "最多输入100个字符" }]}
-          >
-            <TextArea
-              rows={4}
-              disabled={modal.operateType === "see"}
-              autoSize={{ minRows: 2, maxRows: 6 }}
-            />
-          </Form.Item>
-          <Form.Item
-            label="状态"
-            name="conditions"
+            label="工程状态"
+            name="status"
             {...formItemLayout}
             rules={[{ required: true, message: "请选择状态" }]}
           >
-            <Select disabled={modal.operateType === "see"}>
-              <Option key={1} value={1}>
-                启用
-              </Option>
-              <Option key={-1} value={-1}>
-                禁用
-              </Option>
-            </Select>
+            <Select
+              options={projectStatusDict}
+              placeholder="请选择状态"
+            ></Select>
+          </Form.Item>
+
+          <Form.Item
+            label="分公司"
+            name="company"
+            {...formItemLayout}
+            rules={[{ required: true, message: "请选择分公司" }]}
+          >
+            <Select options={companyList} placeholder="请选择分公司"></Select>
           </Form.Item>
         </Form>
       </Modal>
-
-      <RoleTree
-        title={"分配角色"}
-        data={role.roleData}
-        visible={role.roleTreeShow}
-        defaultKeys={role.roleTreeDefault}
-        loading={role.roleTreeLoading}
-        onOk={onRoleOk}
-        onClose={onRoleClose}
-      />
     </div>
   );
 }
 
-export default UserAdminContainer;
+export default ProjectMgContainer;

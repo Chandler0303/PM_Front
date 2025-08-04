@@ -7,7 +7,7 @@ export const menus = [
     url: "/home",
     parent: null,
     desc: "首页",
-    sorts: 0
+    sorts: 0,
   },
   {
     id: 2,
@@ -16,7 +16,7 @@ export const menus = [
     url: "/project",
     parent: null,
     desc: "项目管理目录分支",
-    sorts: 1
+    sorts: 1,
   },
   {
     id: 3,
@@ -31,7 +31,7 @@ export const menus = [
     id: 4,
     title: "流程管理",
     icon: "icon-user",
-    url: "/procedure/management",
+    url: "/project/procedureMg",
     parent: 2,
     desc: "项目管理/流程管理",
     sorts: 1,
@@ -43,7 +43,7 @@ export const menus = [
     url: "/system",
     parent: null,
     desc: "系统管理目录分支",
-    sorts: 2
+    sorts: 2,
   },
   {
     id: 6,
@@ -53,5 +53,21 @@ export const menus = [
     parent: 5,
     desc: "系统管理/用户管理",
     sorts: 0,
+  },
+];
+
+// 所有按钮权限
+export const powers = [
+  {
+    id: "1001",
+    name: "创建项目",
+  },
+  {
+    id: "1002",
+    name: "修改项目",
+  },
+  {
+    id: "1003",
+    name: "回退任务",
   },
 ];

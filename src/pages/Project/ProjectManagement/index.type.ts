@@ -1,30 +1,27 @@
 /** 当前页面所需所有类型声明 **/
 
-import { UserBasicInfoParam } from "@/models/index.type";
-
-export type { UserBasicInfoParam, Res } from "@/models/index.type";
-
-// 列表table的数据类型
-export type TableRecordData = {
-  key?: number;
-  id: number;
-  serial: number; // 序号
-  username: string; // 用户名
-  password: string; // 密码
-  phone: string | number; // 手机
-  email: string; // 邮箱
-  desc: string; // 描述
-  conditions: number; // 是否启用 1启用 -1禁用
-  control?: number; // 控制，传入的ID
-  powers?: number[]; // 拥有的所有权限ID
+export type ProjectInfo = {
+  id?: number;
+  name: string;
+  projCode: string;
+  year: string;
+  type: number;
+  status: number;
+  amount: string;
+  stages: any[];
+  company: number;
 };
 
+// 列表table的数据类型
+export interface TableRecordData extends ProjectInfo {
+  id: number;
+}
 
-export type operateType = "add" | "see" | "up";
+export type operateType = "add" | "up";
 
 export type ModalType = {
   operateType: operateType;
-  nowData: UserBasicInfoParam | null;
+  nowData: TableRecordData | null;
   modalShow: boolean;
   modalLoading: boolean;
 };
@@ -46,4 +43,9 @@ export type TreeDataInfo = {
   title: string;
   children?: TreeDataInfo[];
   parent?: TreeDataInfo;
-}
+};
+
+export type CompanyInfo = {
+  id: number;
+  name: string;
+};

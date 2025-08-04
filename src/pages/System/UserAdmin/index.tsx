@@ -5,31 +5,33 @@
 // ==================
 import React, { useState, useMemo } from "react";
 import { useSetState, useMount } from "react-use";
-import { useSelector, useDispatch } from "react-redux";
 import {
   Form,
   Button,
   Input,
   Table,
   message,
-  Popconfirm,
   Modal,
   Tooltip,
   Divider,
   Select,
+  Popconfirm,
 } from "antd";
 import {
   EditOutlined,
   ToolOutlined,
-  DeleteOutlined,
   PlusCircleOutlined,
   SearchOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 
 // ==================
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
+import { powers } from "@/router/mens";
+import pmApi from "@/api/pm";
+import sysApi from "@/api/sys";
 
 const formItemLayout = {
   labelCol: {
@@ -57,10 +59,9 @@ import {
   SearchInfo,
   RoleTreeInfo,
   UserBasicInfoParam,
-  Res,
-  OrgInfo
+  OrgInfo,
 } from "./index.type";
-import { RootState, Dispatch } from "@/store";
+import { Dispatch } from "@/store";
 
 // ==================
 // CSS
@@ -72,13 +73,9 @@ import AuthWrapper from "@/components/AuthWrapper";
 // 本组件
 // ==================
 function UserAdminContainer(): JSX.Element {
-  const dispatch = useDispatch<Dispatch>();
-  const userinfo = useSelector((state: RootState) => state.app.userinfo);
-  const p = useSelector((state: RootState) => state.app.powersCode);
-
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
-  const [orgData, setOrgData] = useState<SelectData[]>([])
+  const [orgData, setOrgData] = useState<SelectData[]>([]);
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
 
   // 分页相关参数
@@ -98,7 +95,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 搜索相关参数
   const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    username: undefined // 账号
+    username: undefined, // 账号
   });
 
   // 权限树相关参数
@@ -112,26 +109,27 @@ function UserAdminContainer(): JSX.Element {
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
     console.log("UserAdminContainer mounted");
-    onGetOrgData()
+    onGetOrgData();
     onGetData(page);
   });
 
   // 查询部门
   async function onGetOrgData(): Promise<void> {
     try {
-      const res = await dispatch.sys.getOrgList();
+      const res = await pmApi.getOrgList();
       if (res && res.success) {
-        setOrgData(res.data.map((item: OrgInfo) => {
-          return {
-            label: item.name,
-            value: item.id
-          }
-        }));
+        setOrgData(
+          res.data.map((item: OrgInfo) => {
+            return {
+              label: item.name,
+              value: item.id,
+            };
+          })
+        );
       } else {
         message.error(res?.message ?? "数据获取失败");
       }
     } finally {
-
     }
   }
 
@@ -143,11 +141,11 @@ function UserAdminContainer(): JSX.Element {
     const params = {
       pageNum: page.pageNum,
       pageSize: page.pageSize,
-      username: searchInfo.username
+      username: searchInfo.username,
     };
     setLoading(true);
     try {
-      const res = await dispatch.sys.getUserList(tools.clearNull(params));
+      const res = await sysApi.getUserList(tools.clearNull(params));
       if (res && res.success) {
         setData(res.data);
         setPage({
@@ -200,6 +198,7 @@ function UserAdminContainer(): JSX.Element {
         // 查看或修改，需设置表单各控件的值为当前所选中行的数据
         form.setFieldsValue({
           ...data,
+          org: data.org.id,
         });
       }
     });
@@ -217,12 +216,13 @@ function UserAdminContainer(): JSX.Element {
         password: values.password,
         name: values.name,
         org: values.org,
+        permissions: "[]",
       };
       if (modal.operateType === "add") {
         // 新增
         try {
-          const res: Res | undefined = await dispatch.sys.addUser(params);
-          if (res && res.status === 200) {
+          const res: Res | undefined = await sysApi.addUser(params);
+          if (res && res.success) {
             message.success("添加成功");
             onGetData(page);
             onClose();
@@ -236,10 +236,13 @@ function UserAdminContainer(): JSX.Element {
         }
       } else {
         // 修改
-        params.id = modal.nowData?.id;
+        const id = modal.nowData?.id;
+        if (!id) {
+          return;
+        }
         try {
-          const res: Res | undefined = await dispatch.sys.upUser(params);
-          if (res && res.status === 200) {
+          const res: Res | undefined = await sysApi.upUser(id, params);
+          if (res && res.success) {
             message.success("修改成功");
             onGetData(page);
             onClose();
@@ -261,8 +264,8 @@ function UserAdminContainer(): JSX.Element {
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
     try {
-      const res = await dispatch.sys.delUser({ id });
-      if (res && res.status === 200) {
+      const res = await sysApi.delUser({ id });
+      if (res && res.success) {
         message.success("删除成功");
         onGetData(page);
       } else {
@@ -282,19 +285,21 @@ function UserAdminContainer(): JSX.Element {
 
   /** 分配权限按钮点击，权限控件出现 **/
   const onTreeShowClick = (record: TableRecordData): void => {
+    const permissions = record.permissions
+      ? JSON.parse(record.permissions)
+      : [];
     setModal({
       nowData: record,
     });
     setRole({
-      roleData: [{
-        key: 1001,
-        title: "项目增加"
-      }, {
-        key: 1002,
-        title: "项目修改"
-      }],
+      roleData: powers.map((p) => {
+        return {
+          key: p.id,
+          title: p.name,
+        };
+      }),
       roleTreeShow: true,
-      roleTreeDefault: record.powers || [],
+      roleTreeDefault: permissions,
     });
   };
 
@@ -305,15 +310,15 @@ function UserAdminContainer(): JSX.Element {
       return;
     }
     const params = {
-      id: modal.nowData.id,
-      roles: keys.map((item) => Number(item)),
+      ...modal.nowData,
+      permissions: JSON.stringify(keys.map((item) => Number(item))),
     };
     setRole({
       roleTreeLoading: true,
     });
     try {
-      const res: Res = await dispatch.sys.setUserRoles(params);
-      if (res && res.status === 200) {
+      const res: Res = await sysApi.upUser(modal.nowData.id, params);
+      if (res && res.success) {
         message.success("分配成功");
         onGetData(page);
         onRoleClose();
@@ -365,15 +370,14 @@ function UserAdminContainer(): JSX.Element {
       dataIndex: "org",
       key: "org",
       render: (v: null, record: TableRecordData) => {
-        return orgData.find((item: SelectData) => item.value === record.org)?.label
-      }
+        return record.org.name;
+      },
     },
     {
       title: "操作",
       key: "control",
       width: 200,
       render: (v: null, record: TableRecordData) => {
-
         return (
           <>
             <AuthWrapper code="edit">
@@ -387,7 +391,7 @@ function UserAdminContainer(): JSX.Element {
                 </Tooltip>
               </span>
             </AuthWrapper>
-            <AuthWrapper code="edit">
+            <AuthWrapper code="powers">
               <span
                 key="2"
                 className="control-btn blue"
@@ -412,14 +416,15 @@ function UserAdminContainer(): JSX.Element {
                   </Tooltip>
                 </span>
               </Popconfirm>
-            </AuthWrapper></>
+            </AuthWrapper>
+          </>
         );
       },
     },
   ];
 
   // table列表所需数据
-   // table列表所需数据
+  // table列表所需数据
   const tableData = useMemo(() => {
     return data.map((item, index) => {
       return {
@@ -430,12 +435,10 @@ function UserAdminContainer(): JSX.Element {
         password: item.password,
         name: item.name,
         org: item.org,
-        control: item.id,
-        powers: item.powers,
+        permissions: item.permissions,
       };
     });
   }, [page, data]);
-
 
   return (
     <div>
@@ -480,6 +483,7 @@ function UserAdminContainer(): JSX.Element {
           columns={tableColumns}
           loading={loading}
           dataSource={tableData}
+          bordered
           pagination={{
             total: page.total,
             current: page.pageNum,
@@ -499,9 +503,7 @@ function UserAdminContainer(): JSX.Element {
         onCancel={onClose}
         confirmLoading={modal.modalLoading}
       >
-        <Form
-          form={form}
-        >
+        <Form form={form}>
           <Form.Item
             label="账号"
             name="username"
@@ -525,9 +527,7 @@ function UserAdminContainer(): JSX.Element {
               { max: 12, message: "最多输入12位字符" },
             ]}
           >
-            <Input
-              placeholder="请输入昵称"
-            />
+            <Input placeholder="请输入昵称" />
           </Form.Item>
           <Form.Item
             label="密码"
@@ -539,9 +539,7 @@ function UserAdminContainer(): JSX.Element {
               { max: 18, message: "最多输入18位字符" },
             ]}
           >
-            <Input.Password
-              placeholder="请输入密码"
-            />
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
           <Form.Item
             label="部门"
@@ -549,10 +547,7 @@ function UserAdminContainer(): JSX.Element {
             {...formItemLayout}
             rules={[{ required: true, message: "请选择部门" }]}
           >
-            <Select 
-              placeholder="请选择部门"
-              options={orgData}
-            />
+            <Select placeholder="请选择部门" options={orgData} />
           </Form.Item>
         </Form>
       </Modal>

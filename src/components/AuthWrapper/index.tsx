@@ -1,17 +1,17 @@
-import { RootState } from '@/store';
-import React, { ReactNode } from 'react';
-import { useSelector } from 'react-redux';
+import { RootState } from "@/store";
+import React, { ReactNode } from "react";
+import { useSelector } from "react-redux";
 
 interface AuthWrapperProps {
-  code: string;       // 权限码
-  children: ReactNode
+  code: string; // 权限码
+  children: ReactNode;
 }
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ code, children }) => {
   const userinfo = useSelector((state: RootState) => state.app.userinfo);
 
   if (!userinfo) {
-    return null
+    return null;
   }
   // 管理员
   if (userinfo.admin) {

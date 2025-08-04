@@ -39,10 +39,11 @@ export interface Power extends PowerParam {
 
 // 用户数据类型
 export interface UserInfo {
+  username: string;
   admin: boolean;
-  name: string
-  id: number
-  permissions: string
+  name: string;
+  id: number;
+  permissions: string;
   powers: Power[]; // 拥有的所有权限对象
 }
 
@@ -65,6 +66,7 @@ export interface UserBasicInfoParam {
   password: string | number; // 密码
   name: string | number;
   org: number;
+  permissions: string;
 }
 
 export interface PowerTree extends Menu {
@@ -73,7 +75,7 @@ export interface PowerTree extends Menu {
 
 // ./app.js的state类型
 export interface AppState {
-  userinfo: UserInfo | null
+  userinfo: UserInfo | null;
 }
 
 // ./sys.js的state类型
@@ -81,12 +83,3 @@ export interface SysState {
   menus: Menu[];
   powerTreeData: PowerTree[];
 }
-
-// 接口的返回值类型
-export type Res =
-  | {
-      success: Boolean;
-      data?: any; // 返回的数据
-      message?: string; // 返回的消息
-    }
-  | undefined;

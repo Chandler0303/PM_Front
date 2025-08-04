@@ -8,7 +8,6 @@ import { TreeDataInfo } from "@/pages/Project/ProjectManagement/index.type";
 // 类型声明
 // ==================
 
-
 interface Props {
   title: string; // 标题
   data: TreeDataInfo[]; //  原始数据
@@ -37,7 +36,9 @@ export default function RoleTreeComponent(props: Props): JSX.Element {
         // 第1次递归
         kids = data.filter((item: TreeDataInfo) => !item.parent);
       } else {
-        kids = data.filter((item: TreeDataInfo) => item.parent?.key === one.key);
+        kids = data.filter(
+          (item: TreeDataInfo) => item.parent?.key === one.key
+        );
       }
       kids.forEach(
         (item: TreeDataInfo) => (item.children = dataToJson(item, data))
@@ -71,13 +72,14 @@ export default function RoleTreeComponent(props: Props): JSX.Element {
   // 计算属性 memo
   // ==================
 
-
   // 处理原始数据，将原始数据处理为层级关系
   const sourceData = useMemo(() => {
     const roleData: TreeDataInfo[] = cloneDeep(props.data);
 
     return dataToJson(undefined, roleData) || [];
   }, [props.data, dataToJson]);
+
+  console.log(sourceData);
 
   return (
     <Modal
