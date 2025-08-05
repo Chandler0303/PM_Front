@@ -8,6 +8,7 @@ export type ProjectInfo = {
   type: number;
   status: number;
   amount: string;
+  stage: number;
   stages: any[];
   company: number;
 };
@@ -15,9 +16,11 @@ export type ProjectInfo = {
 // 列表table的数据类型
 export interface TableRecordData extends ProjectInfo {
   id: number;
+  newId?: string;
+  durationLabel?: string;
 }
 
-export type operateType = "add" | "up";
+export type operateType = "add" | "up" | "handle";
 
 export type ModalType = {
   operateType: operateType;

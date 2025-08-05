@@ -1,5 +1,6 @@
 /** 这个文件封装了一些常用的工具函数 **/
-
+import dayjs from 'dayjs'
+import moment from 'moment'
 const tools = {
   /**
    * 保留N位小数
@@ -147,6 +148,44 @@ const tools = {
     }
     return temp as T;
   },
+  processRowSpan(data: any[], groupKey: string) {
+    let lastVal: any = null;
+    let count = 0;
+    return data.map((item, index) => {
+      if (item[groupKey] !== lastVal) {
+        // 遇到新组，统计这个组有几项
+        count = data.filter((d) => d[groupKey] === item[groupKey]).length;
+        item.rowSpan = count;
+        lastVal = item[groupKey];
+      } else {
+        item.rowSpan = 0; // 合并行中非首行
+      }
+      return item;
+    });
+  },
+  formatDate(date: Date, format: string = 'YYYY/MM/DD HH:mm:ss'){
+    if (!date) {
+      return ''
+    }
+    const now = dayjs(date);
+    const str = now.format(format);
+    return str
+  },
+  formatAntDate(date: Date | string, format:string){
+    if (!date) {
+      return ''
+    }
+    return moment(date, format)
+  },
+  diffDays(startDate: string | Date, endDate: string | Date) {
+    if (!startDate || !endDate) {
+      return ''
+    }
+    const start = dayjs(startDate);
+    const end = dayjs(endDate);
+    console.log(end.diff(start, 'day'))
+    return end.diff(start, 'day');  // 返回两个日期相差多少整天
+  }
 };
 
 export default tools;

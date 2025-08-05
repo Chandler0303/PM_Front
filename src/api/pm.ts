@@ -35,6 +35,26 @@ export default {
     }
     return;
   },
+  async editProjectNode(params: any) {
+    try {
+        const res: Res = await axios.put(`/api/project/node/modify`, params)
+        return res
+    } catch (err) {
+        message.error("网络错误，请重试");
+    }
+  },
+  /**
+   * 删除项目
+   * **/
+  async delProject(params: { id: number }) {
+    try {
+      const res: Res = await axios.delete("/api/project/" + params.id);
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
 
   /**
    * 获取流程管理
@@ -49,7 +69,7 @@ export default {
     return;
   },
   // 流程编辑
-  async editProcedureConfig(params) {
+  async editProcedureConfig(params: any) {
     try {
       const res: Res = await axios.put(`/api/project/procedureConfig`, params);
       return res;

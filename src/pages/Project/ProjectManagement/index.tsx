@@ -5,7 +5,6 @@
 // ==================
 import React, { useState, useMemo } from "react";
 import { useSetState, useMount } from "react-use";
-import { useDispatch } from "react-redux";
 import {
   Form,
   Button,
@@ -16,24 +15,37 @@ import {
   Divider,
   Select,
   DatePicker,
+  Tooltip,
+  Popconfirm,
 } from "antd";
-import { PlusCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusCircleOutlined,
+  SearchOutlined,
+  ToolOutlined,
+} from "@ant-design/icons";
 
 // ==================
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
+import pmApi from "@/api/pm";
+import sysApi from "@/api/sys";
+import dayjs from "dayjs";
+import { projectStatusDict, projectTypeDict } from "@/common/dict";
+import AuthWrapper from "@/components/AuthWrapper";
 
 const { Option } = Select;
 
 const formItemLayout = {
   labelCol: {
     xs: { span: 24 },
-    sm: { span: 4 },
+    sm: { span: 6 },
   },
   wrapperCol: {
     xs: { span: 24 },
-    sm: { span: 19 },
+    sm: { span: 17 },
   },
 };
 
@@ -48,99 +60,130 @@ import {
   CompanyInfo,
   ProjectInfo,
 } from "./index.type";
-import { Dispatch } from "@/store";
+import { UserInfo } from "@/models/index.type";
+import { ColumnsType } from "antd/lib/table";
+import { ProcedureInfo } from "../ProcedureManagement/index.type";
 
 // ==================
 // CSS
 // ==================
 import "./index.less";
-import { ProcedureInfo } from "../ProcedureManagement/index.type";
-import { ColumnsType } from "antd/lib/table";
-import AuthWrapper from "@/components/AuthWrapper";
-import pmApi from "@/api/pm";
-import sysApi from "@/api/sys";
-import { projectStatusDict, projectTypeDict } from "@/common/dict";
-import { UserInfo } from "@/models/index.type";
+import { useAuthPowers } from "@/hooks/useAuthPowers";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 // ==================
 // 本组件
 // ==================
 function ProjectMgContainer(): JSX.Element {
-  const dispatch = useDispatch<Dispatch>();
-
   let userList: UserInfo[] = [];
 
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
   const [companyList, setCompanyList] = useState<SelectData[]>([]);
-  const [procedureList, setProcedureList] = useState<ProcedureInfo[]>();
+  const [procedureInfo, setProcedureInfo] = useState<ProcedureInfo>();
+  const [nodesData, setNodesData] = useState<SelectData[]>();
+  const [taskPower, setTaskPower] = useState(false);
+  const isEditTask = useAuthPowers("1003");
+  const userinfo = useSelector((state: RootState) => state.app.userinfo);
   const [columns, setColumns] = useState<ColumnsType<TableRecordData>>([
     {
       title: "序号",
-      dataIndex: "serial",
-      key: "serial",
+      dataIndex: "id",
+      key: "id",
       width: 150,
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "工程编号",
-      dataIndex: "username",
-      key: "username",
+      dataIndex: "projCode",
+      key: "projCode",
       width: 150,
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "年度",
       dataIndex: "year",
       key: "year",
       width: 150,
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "工程名称",
       dataIndex: "name",
       key: "name",
       width: 150,
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "合同金额",
       dataIndex: "amount",
       key: "amount",
       width: 150,
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "项目类型",
       dataIndex: "type",
       key: "type",
       width: 150,
-      render: (v: number): JSX.Element =>
-        v === 1 ? (
-          <span style={{ color: "green" }}>资本类</span>
-        ) : (
-          <span style={{ color: "red" }}>其他</span>
-        ),
+      render: (v: number, record: TableRecordData) => {
+        const data = projectTypeDict.find((s) => s.value == v);
+        return data ? data.label : "--";
+      },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "项目阶段",
       dataIndex: "stage",
       key: "stage",
       width: 150,
+      render: (v: number, record: TableRecordData) => {
+        if (v === 0) {
+          return "--";
+        }
+      },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "工程状态",
       dataIndex: "status",
       key: "status",
       width: 150,
-      render: (v: number): JSX.Element =>
-        v === 1 ? (
-          <span style={{ color: "green" }}>未开工</span>
-        ) : (
-          <span style={{ color: "red" }}>施工中</span>
-        ),
+      render: (v: number, record: TableRecordData) => {
+        const data = projectStatusDict.find((s) => s.value == v);
+        return data ? data.label : "--";
+      },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "分公司",
       dataIndex: "companyName",
       key: "companyName",
       width: 150,
+      render: (v: number, record: TableRecordData) => {
+        return record.company ? record.company.name : "--";
+      },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "时间点",
@@ -151,10 +194,53 @@ function ProjectMgContainer(): JSX.Element {
     {
       title: "操作",
       key: "control",
+      dataIndex: "control",
+      fixed: "right",
       width: 200,
       render: (v: null, record: TableRecordData) => {
-        return 1;
+        return (
+          <>
+            <AuthWrapper code="edit">
+              <span
+                key="1"
+                className="control-btn blue"
+                onClick={() => onModalShow(record, "up")}
+              >
+                <Tooltip placement="top" title="修改">
+                  <ToolOutlined />
+                </Tooltip>
+              </span>
+            </AuthWrapper>
+            <span
+              key="2"
+              className="control-btn blue"
+              onClick={() => onModalShow(record, "handle")}
+            >
+              <Tooltip placement="top" title="流程管理">
+                <EditOutlined />
+              </Tooltip>
+            </span>
+            <AuthWrapper code="del">
+              <Popconfirm
+                key="3"
+                title="确定删除吗?"
+                onConfirm={() => onDel(record.id)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <span className="control-btn red">
+                  <Tooltip placement="top" title="删除">
+                    <DeleteOutlined />
+                  </Tooltip>
+                </span>
+              </Popconfirm>
+            </AuthWrapper>
+          </>
+        );
       },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
   ]);
 
@@ -200,11 +286,35 @@ function ProjectMgContainer(): JSX.Element {
     try {
       const res = await pmApi.getProjectList(tools.clearNull(params));
       if (res && res.success) {
-        setData([]);
+        const list: TableRecordData[] = [];
+        let sum = 0;
+        res.data.forEach((item: TableRecordData) => {
+          list.push({
+            ...item,
+            newId: item.id + "-" + sum++,
+            durationLabel: "计划时间",
+          });
+          list.push({
+            ...item,
+            newId: item.id + "-" + sum++,
+            durationLabel: "实际时间",
+          });
+          list.push({
+            ...item,
+            newId: item.id + "-" + sum++,
+            durationLabel: "偏差分析",
+          });
+          list.push({
+            ...item,
+            newId: item.id + "-" + sum++,
+            durationLabel: "实际工期",
+          });
+        });
+        setData(tools.processRowSpan(list, "id"));
         setPage({
           pageNum: page.pageNum,
           pageSize: page.pageSize,
-          total: 0,
+          total: res.data.length,
         });
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -218,8 +328,10 @@ function ProjectMgContainer(): JSX.Element {
     try {
       const res = await pmApi.getProcedureList();
       if (res && res.success) {
-        setProcedureList(res.data);
-        tableColumnsHanle();
+        const procedure = res.data[0];
+        procedure.stages = JSON.parse(procedure.config).stages;
+        setProcedureInfo(procedure);
+        tableColumnsHanle(procedure);
       } else {
         message.error(res?.message ?? "数据获取失败");
       }
@@ -302,13 +414,109 @@ function ProjectMgContainer(): JSX.Element {
       if (type === "add") {
         // 新增，需重置表单各控件的值
         form.resetFields();
-      } else if (data) {
-        // 查看或修改，需设置表单各控件的值为当前所选中行的数据
-        form.setFieldsValue({
-          ...data,
-        });
+      } else if (type === "up") {
+        // 修改，需设置表单各控件的值为当前所选中行的数据
+        if (data) {
+          form.setFieldsValue({
+            amount: data.amount,
+            company: data.company.id,
+            name: data.name,
+            projCode: data.projCode,
+            status: data.status,
+            type: Number(data.type),
+            year: dayjs(data.year),
+          });
+        }
+      } else {
+        if (data) {
+          const nodes: SelectData[] = [];
+          data.stages.forEach((stage) => {
+            stage.nodes.forEach((node) => {
+              node.parent = {
+                name: stage.name,
+                seq: stage.seq,
+              };
+              nodes.push({
+                label: node.name,
+                value: node.id,
+                data: node,
+              });
+            });
+          });
+          setNodesData(nodes);
+          // 获取当前进度节点
+          const node =
+            nodes.find((n) => !n.data.plannedEnd || !n.data.actualEnd) || {};
+          form.setFieldsValue({
+            task: node.value,
+            plannedStart: tools.formatAntDate(
+              tools.formatDate(node.data.plannedStart),
+              "YYYY-MM-DD"
+            ),
+
+            plannedEnd: tools.formatAntDate(
+              tools.formatDate(node.data.plannedEnd),
+              "YYYY-MM-DD"
+            ),
+            actualStart: tools.formatAntDate(
+              tools.formatDate(node.data.actualStart),
+              "YYYY-MM-DD"
+            ),
+            actualEnd: tools.formatAntDate(
+              tools.formatDate(node.data.actualEnd),
+              "YYYY-MM-DD"
+            ),
+          });
+
+          setTaskPower(
+            isEditTask || taskPowersCheck(node.data.participants || [])
+          );
+        }
       }
     });
+  };
+
+  const taskChange = (val: number) => {
+    const findNode = nodesData ? nodesData.find((n) => n.value === val) : {};
+    const node = findNode ? findNode.data : {};
+    form.setFieldsValue({
+      task: val,
+      plannedStart: tools.formatAntDate(
+        tools.formatDate(node.plannedStart),
+        "YYYY-MM-DD"
+      ),
+
+      plannedEnd: tools.formatAntDate(
+        tools.formatDate(node.plannedEnd),
+        "YYYY-MM-DD"
+      ),
+      actualStart: tools.formatAntDate(
+        tools.formatDate(node.actualStart),
+        "YYYY-MM-DD"
+      ),
+      actualEnd: tools.formatAntDate(
+        tools.formatDate(node.actualEnd),
+        "YYYY-MM-DD"
+      ),
+    });
+
+    const configStage =
+      procedureInfo && procedureInfo.stages
+        ? procedureInfo.stages.find((s) => s.stageName === node.parent.name)
+        : {};
+    const configNode =
+      configStage && configStage.nodes
+        ? configStage.nodes.find((n) => n.name === node.name)
+        : {};
+
+    setTaskPower(isEditTask || taskPowersCheck(configNode.participants || []));
+  };
+
+  const taskPowersCheck = (usernameList: string[]): boolean => {
+    if (!userinfo) {
+      return false;
+    }
+    return usernameList.some((c: string) => c.toString() === userinfo.username);
   };
 
   /** 模态框确定 **/
@@ -318,14 +526,15 @@ function ProjectMgContainer(): JSX.Element {
       setModal({
         modalLoading: true,
       });
-      const params: ProjectInfo = {
-        ...values,
-      };
       if (modal.operateType === "add") {
         // 新增
         try {
-          params.stages = createStages();
-          const res: Res | undefined = await pmApi.addProject(params);
+          const res: Res | undefined = await pmApi.addProject({
+            ...values,
+            year: Number(values.year.format("YYYY")),
+            stage: 1,
+            stages: createStages(),
+          });
           if (res && res.success) {
             message.success("添加成功");
             onGetData(page);
@@ -338,11 +547,33 @@ function ProjectMgContainer(): JSX.Element {
             modalLoading: false,
           });
         }
+      } else if (modal.operateType === "up") {
+        try {
+          const res: Res | undefined = await pmApi.editProject({
+            ...values,
+            year: Number(values.year.format("YYYY")),
+            id: modal.nowData?.id,
+          });
+          if (res && res.success) {
+            message.success("修改成功");
+            onGetData(page);
+            onClose();
+          } else {
+            message.error(res?.message ?? "操作失败");
+          }
+        } finally {
+          setModal({
+            modalLoading: false,
+          });
+        }
       } else {
         // 修改
-        params.id = modal.nowData?.id;
         try {
-          const res: Res | undefined = await dispatch.sys.upUser(params);
+          const res: Res | undefined = await pmApi.editProjectNode({
+            ...values,
+            id: values.task,
+            task: undefined,
+          });
           if (res && res.success) {
             message.success("修改成功");
             onGetData(page);
@@ -360,32 +591,12 @@ function ProjectMgContainer(): JSX.Element {
       // 未通过校验
     }
   };
-
-  const createStages = () => {
-    const stages =
-      procedureList && procedureList[0]
-        ? JSON.parse(procedureList[0].config).stages
-        : [];
-    return stages.map((stage: any) => {
-      return {
-        name: stage.stageName,
-        seq: stage.seq,
-        nodes: stage.nodes.map((node: any) => {
-          return {
-            name: node.name,
-            seq: node.seq,
-          };
-        }),
-      };
-    });
-  };
-
   // 删除某一条数据
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
     try {
-      const res = await dispatch.sys.delUser({ id });
-      if (res && res.status === 200) {
+      const res = await pmApi.delProject({ id });
+      if (res && res.success) {
         message.success("删除成功");
         onGetData(page);
       } else {
@@ -394,6 +605,24 @@ function ProjectMgContainer(): JSX.Element {
     } finally {
       setLoading(false);
     }
+  };
+
+  const createStages = () => {
+    const stages =
+      procedureInfo && procedureInfo.stages ? procedureInfo.stages : [];
+    return stages.map((stage: any) => {
+      return {
+        name: stage.stageName,
+        seq: stage.seq,
+        nodes: stage.nodes.map((node: any) => {
+          return {
+            name: node.name,
+            seq: node.seq,
+            principal: "",
+          };
+        }),
+      };
+    });
   };
 
   /** 模态框关闭 **/
@@ -412,15 +641,8 @@ function ProjectMgContainer(): JSX.Element {
   // 属性 和 memo
   // ==================
 
-  function chineseToBase64Key(str: string) {
-    return window.btoa(unescape(encodeURIComponent(str)));
-  }
-
-  const tableColumnsHanle = () => {
-    const stages =
-      procedureList && procedureList[0]
-        ? JSON.parse(procedureList[0].config).stages
-        : [];
+  const tableColumnsHanle = (procedure: ProcedureInfo) => {
+    const stages = procedure.stages || [];
 
     const oneColumns = stages.map((stage: any) => {
       return {
@@ -434,9 +656,105 @@ function ProjectMgContainer(): JSX.Element {
                 children: [
                   {
                     title: node.plannedDays || "--",
-                    key: chineseToBase64Key(node.stageName),
-                    dataIndex: chineseToBase64Key(node.stageName),
                     width: 150,
+                    children: [
+                      {
+                        title: "开始时间",
+                        key: stage.seq + "-" + node.seq + "-" + "start",
+                        dataIndex: stage.seq + "-" + node.seq + "-" + "tart",
+                        width: 150,
+                        onCell: (record, index) => {
+                          return {
+                            colSpan:
+                              record.durationLabel === "实际工期" ? 2 : 1,
+                          };
+                        },
+                        render: (v: any, record: any) => {
+                          const currentStage = record.stages.find(
+                            (s) => s.seq === stage.seq
+                          );
+                          const currentNode = currentStage.nodes.find(
+                            (n) => n.seq === node.seq
+                          );
+                          let val;
+                          switch (record.durationLabel) {
+                            case "计划时间":
+                              val = tools.formatDate(
+                                currentNode.plannedStart,
+                                "YYYY/MM/DD"
+                              );
+                              break;
+                            case "实际时间":
+                              val = tools.formatDate(
+                                currentNode.actualStart,
+                                "YYYY/MM/DD"
+                              );
+                              break;
+                            case "偏差分析":
+                              val = tools.diffDays(
+                                currentNode.actualStart,
+                                currentNode.plannedStart
+                              );
+                              break;
+                            case "实际工期":
+                              val = tools.diffDays(
+                                currentNode.actualStart,
+                                currentNode.actualEnd
+                              );
+                              break;
+                          }
+                          return val;
+                        },
+                      },
+                      {
+                        title: "结束时间",
+                        key: stage.seq + "-" + node.seq + "-" + "end",
+                        dataIndex: stage.seq + "-" + node.seq + "-" + "end",
+                        width: 150,
+                        onCell: (record, index) => {
+                          return {
+                            colSpan:
+                              record.durationLabel === "实际工期" ? 0 : 1,
+                          };
+                        },
+                        render: (v: any, record: any) => {
+                          const currentStage = record.stages.find(
+                            (s) => s.seq === stage.seq
+                          );
+                          const currentNode = currentStage.nodes.find(
+                            (n) => n.seq === node.seq
+                          );
+                          let val;
+                          switch (record.durationLabel) {
+                            case "计划时间":
+                              val = tools.formatDate(
+                                currentNode.plannedEnd,
+                                "YYYY/MM/DD"
+                              );
+                              break;
+                            case "实际时间":
+                              val = tools.formatDate(
+                                currentNode.actualEnd,
+                                "YYYY/MM/DD"
+                              );
+                              break;
+                            case "偏差分析":
+                              val = tools.diffDays(
+                                currentNode.actualEnd,
+                                currentNode.plannedEnd
+                              );
+                              break;
+                            case "实际工期":
+                              val = tools.diffDays(
+                                currentNode.actualStart,
+                                currentNode.actualEnd
+                              );
+                              break;
+                          }
+                          return val;
+                        },
+                      },
+                    ],
                   },
                 ],
               },
@@ -461,25 +779,6 @@ function ProjectMgContainer(): JSX.Element {
       .filter((u) => u)
       .join("，");
   };
-
-  // table列表所需数据
-  const tableData = useMemo(() => {
-    return data.map((item, index) => {
-      return {
-        key: index,
-        id: item.id,
-        serial: index + 1 + (page.pageNum - 1) * page.pageSize,
-        username: item.username,
-        password: item.password,
-        phone: item.phone,
-        email: item.email,
-        desc: item.desc,
-        conditions: item.conditions,
-        control: item.id,
-        powers: item.powers,
-      };
-    });
-  }, [page, data]);
 
   return (
     <div>
@@ -535,7 +834,8 @@ function ProjectMgContainer(): JSX.Element {
         <Table
           columns={columns}
           loading={loading}
-          dataSource={tableData}
+          dataSource={data}
+          rowKey="newId"
           scroll={{ x: "max-content", y: 55 * 5 }}
           bordered
           pagination={{
@@ -549,12 +849,17 @@ function ProjectMgContainer(): JSX.Element {
         />
       </div>
 
-      {/* 新增&修改 模态框 */}
+      {/* 模态框 */}
       <Modal
-        title={{ add: "新增", up: "修改" }[modal.operateType]}
+        title={
+          { add: "新增", up: "修改", handle: "任务管理" }[modal.operateType]
+        }
         open={modal.modalShow}
         onOk={onOk}
         onCancel={onClose}
+        okButtonProps={{
+          disabled: modal.operateType === "handle" && !taskPower,
+        }}
         confirmLoading={modal.modalLoading}
       >
         <Form
@@ -563,79 +868,145 @@ function ProjectMgContainer(): JSX.Element {
             type: 1,
           }}
         >
-          <Form.Item
-            label="工程编号"
-            name="projCode"
-            {...formItemLayout}
-            rules={[{ required: true, whitespace: true, message: "必填" }]}
-          >
-            <Input placeholder="请输入工程编号" />
-          </Form.Item>
+          {modal.operateType === "handle" ? (
+            <>
+              <Form.Item
+                label="任务"
+                name="task"
+                {...formItemLayout}
+                rules={[{ required: true, message: "请选择任务" }]}
+              >
+                <Select
+                  options={nodesData}
+                  placeholder="请选择任务"
+                  onChange={taskChange}
+                ></Select>
+              </Form.Item>
+              <Form.Item
+                label="计划开始时间"
+                name="plannedStart"
+                {...formItemLayout}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  disabled={!taskPower}
+                  placeholder="请选择计划开始时间"
+                />
+              </Form.Item>
+              <Form.Item
+                label="计划结束时间"
+                name="plannedEnd"
+                {...formItemLayout}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  disabled={!taskPower}
+                  placeholder="请选择计划结束时间"
+                />
+              </Form.Item>
+              <Form.Item
+                label="实际开始时间"
+                name="actualStart"
+                {...formItemLayout}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  disabled={!taskPower}
+                  placeholder="请选择实际开始时间"
+                />
+              </Form.Item>
+              <Form.Item
+                label="实际结束时间"
+                name="actualEnd"
+                {...formItemLayout}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  disabled={!taskPower}
+                  placeholder="请选择实际结束时间"
+                />
+              </Form.Item>
+            </>
+          ) : (
+            <>
+              <Form.Item
+                label="工程编号"
+                name="projCode"
+                {...formItemLayout}
+                rules={[{ required: true, whitespace: true, message: "必填" }]}
+              >
+                <Input placeholder="请输入工程编号" />
+              </Form.Item>
 
-          <Form.Item
-            label="年度"
-            name="year"
-            {...formItemLayout}
-            rules={[{ required: true, message: "必填" }]}
-          >
-            <DatePicker
-              style={{ width: "100%" }}
-              picker="year"
-              format="YYYY"
-              placeholder="请选择年份"
-            />
-          </Form.Item>
+              <Form.Item
+                label="年度"
+                name="year"
+                {...formItemLayout}
+                rules={[{ required: true, message: "必填" }]}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  picker="year"
+                  format="YYYY"
+                  placeholder="请选择年份"
+                />
+              </Form.Item>
 
-          <Form.Item
-            label="工程名称"
-            name="name"
-            {...formItemLayout}
-            rules={[{ required: true, whitespace: true, message: "必填" }]}
-          >
-            <Input placeholder="请输入工程名称" />
-          </Form.Item>
+              <Form.Item
+                label="工程名称"
+                name="name"
+                {...formItemLayout}
+                rules={[{ required: true, whitespace: true, message: "必填" }]}
+              >
+                <Input placeholder="请输入工程名称" />
+              </Form.Item>
 
-          <Form.Item
-            label="合同金额"
-            name="amount"
-            {...formItemLayout}
-            rules={[{ required: true, whitespace: true, message: "必填" }]}
-          >
-            <Input placeholder="请输入合同金额" />
-          </Form.Item>
+              <Form.Item
+                label="合同金额"
+                name="amount"
+                {...formItemLayout}
+                rules={[{ required: true, whitespace: true, message: "必填" }]}
+              >
+                <Input placeholder="请输入合同金额" />
+              </Form.Item>
 
-          <Form.Item
-            label="项目类型"
-            name="type"
-            {...formItemLayout}
-            rules={[{ required: true, message: "请选择项目类型" }]}
-          >
-            <Select
-              options={projectTypeDict}
-              placeholder="请选择项目类型"
-            ></Select>
-          </Form.Item>
+              <Form.Item
+                label="项目类型"
+                name="type"
+                {...formItemLayout}
+                rules={[{ required: true, message: "请选择项目类型" }]}
+              >
+                <Select
+                  options={projectTypeDict}
+                  placeholder="请选择项目类型"
+                ></Select>
+              </Form.Item>
 
-          <Form.Item
-            label="工程状态"
-            name="status"
-            {...formItemLayout}
-            rules={[{ required: true, message: "请选择状态" }]}
-          >
-            <Select
-              options={projectStatusDict}
-              placeholder="请选择状态"
-            ></Select>
-          </Form.Item>
+              <Form.Item
+                label="工程状态"
+                name="status"
+                {...formItemLayout}
+                rules={[{ required: true, message: "请选择状态" }]}
+              >
+                <Select
+                  options={projectStatusDict}
+                  placeholder="请选择状态"
+                ></Select>
+              </Form.Item>
 
-          <Form.Item
-            label="分公司"
-            name="company"
-            {...formItemLayout}
-            rules={[{ required: true, message: "请选择分公司" }]}
-          >
-            <Select options={companyList} placeholder="请选择分公司"></Select>
-          </Form.Item>
+              <Form.Item
+                label="分公司"
+                name="company"
+                {...formItemLayout}
+                rules={[{ required: true, message: "请选择分公司" }]}
+              >
+                <Select
+                  options={companyList}
+                  placeholder="请选择分公司"
+                ></Select>
+              </Form.Item>
+            </>
+          )}
         </Form>
       </Modal>
     </div>

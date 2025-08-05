@@ -1,3 +1,4 @@
+import { ProcedureInfo } from "@/pages/Project/ProcedureManagement/index.type";
 import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 
@@ -14,3 +15,4 @@ export const useAuthPowers = (code: string): boolean => {
   const permissions = JSON.parse(userinfo.permissions);
   return permissions.some((c: string) => c.toString() === code);
 };
+
