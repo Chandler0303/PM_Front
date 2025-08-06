@@ -81,7 +81,7 @@ import { RootState } from "@/store";
 function ProjectMgContainer(): JSX.Element {
   let userList: UserInfo[] = [];
 
-  const procedureInfoRef = useRef<any>()
+  const procedureInfoRef = useRef<any>();
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
@@ -155,15 +155,15 @@ function ProjectMgContainer(): JSX.Element {
       key: "stage",
       width: 150,
       render: (v: number, record: TableRecordData) => {
-        let stageTitle = ''
-        record.stages.forEach(s => {
+        let stageTitle = "";
+        record.stages.forEach((s) => {
           s.nodes.forEach((n: any) => {
             if (!isNodeComplete(n) && !stageTitle) {
-              stageTitle = s.seq + '.' + s.name
+              stageTitle = s.seq + "." + s.name;
             }
-          })
-        })
-        return stageTitle
+          });
+        });
+        return stageTitle;
       },
       onCell: (record: any) => ({
         rowSpan: record.rowSpan,
@@ -216,7 +216,10 @@ function ProjectMgContainer(): JSX.Element {
                 onClick={() => onModalShow(record, "up")}
               >
                 <Tooltip placement="top" title="修改">
-                  <ToolOutlined className="g-icon" style={{marginRight: '10px'}} />
+                  <ToolOutlined
+                    className="g-icon"
+                    style={{ marginRight: "10px" }}
+                  />
                 </Tooltip>
               </span>
             </AuthWrapper>
@@ -226,7 +229,10 @@ function ProjectMgContainer(): JSX.Element {
               onClick={() => onModalShow(record, "handle")}
             >
               <Tooltip placement="top" title="流程管理">
-                <EditOutlined className="g-icon" style={{marginRight: '10px'}} />
+                <EditOutlined
+                  className="g-icon"
+                  style={{ marginRight: "10px" }}
+                />
               </Tooltip>
             </span>
             <AuthWrapper code="del">
@@ -239,7 +245,10 @@ function ProjectMgContainer(): JSX.Element {
               >
                 <span className="control-btn">
                   <Tooltip placement="top" title="删除">
-                    <DeleteOutlined className="g-icon" style={{color: 'red'}} />
+                    <DeleteOutlined
+                      className="g-icon"
+                      style={{ color: "red" }}
+                    />
                   </Tooltip>
                 </span>
               </Popconfirm>
@@ -290,10 +299,10 @@ function ProjectMgContainer(): JSX.Element {
           data = filterDataHandle(data);
         }
         data.forEach((item: TableRecordData) => {
-          item.stages.sort((a, b) => a.seq - b.seq)
-          item.stages.forEach(s => {
-            s.nodes.sort((a:any, b:any) => a.seq - b.seq)
-          })
+          item.stages.sort((a, b) => a.seq - b.seq);
+          item.stages.forEach((s) => {
+            s.nodes.sort((a: any, b: any) => a.seq - b.seq);
+          });
           list.push({
             ...item,
             newId: item.id + "-" + sum++,
@@ -360,7 +369,7 @@ function ProjectMgContainer(): JSX.Element {
       if (res && res.success) {
         const procedure = res.data[0];
         procedure.stages = JSON.parse(procedure.config).stages;
-        procedureInfoRef.current = procedure
+        procedureInfoRef.current = procedure;
         tableColumnsHanle();
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -493,15 +502,18 @@ function ProjectMgContainer(): JSX.Element {
             ),
           });
 
-       
           const configStage =
             procedureInfoRef.current && procedureInfoRef.current.stages
-              ? procedureInfoRef.current.stages.find((s: any) => s.stageName === selectNode.data.parent.name)
+              ? procedureInfoRef.current.stages.find(
+                  (s: any) => s.stageName === selectNode.data.parent.name
+                )
               : {};
-             
+
           const configNode =
             configStage && configStage.nodes
-              ? configStage.nodes.find((n: any) => n.name === selectNode.data.name)
+              ? configStage.nodes.find(
+                  (n: any) => n.name === selectNode.data.name
+                )
               : {};
           setTaskPower(
             isTaskMg || taskPowersCheck(configNode, selectNode.data)
@@ -512,7 +524,9 @@ function ProjectMgContainer(): JSX.Element {
   };
 
   const taskChange = (val: number) => {
-    const findNode: any = nodesData ? nodesData.find((n) => n.value === val) : {};
+    const findNode: any = nodesData
+      ? nodesData.find((n) => n.value === val)
+      : {};
     const node = findNode ? findNode.data : {};
     form.setFieldsValue({
       task: val,
@@ -537,7 +551,9 @@ function ProjectMgContainer(): JSX.Element {
 
     const configStage =
       procedureInfoRef.current && procedureInfoRef.current.stages
-        ? procedureInfoRef.current.stages.find((s: any) => s.stageName === node.parent.name)
+        ? procedureInfoRef.current.stages.find(
+            (s: any) => s.stageName === node.parent.name
+          )
         : {};
     const configNode =
       configStage && configStage.nodes
@@ -551,12 +567,17 @@ function ProjectMgContainer(): JSX.Element {
     if (!userinfo) {
       return false;
     }
-    const participants = configNode.participants || []
-    return participants.some((c: string) => c.toString() === userinfo.username) && !isNodeComplete(valNode);
+    const participants = configNode.participants || [];
+    return (
+      participants.some((c: string) => c.toString() === userinfo.username) &&
+      !isNodeComplete(valNode)
+    );
   };
 
   function isNodeComplete(node: any) {
-    return (node.plannedStart && node.plannedEnd && node.actualStart && node.actualEnd)
+    return (
+      node.plannedStart && node.plannedEnd && node.actualStart && node.actualEnd
+    );
   }
 
   /** 模态框确定 **/
@@ -564,18 +585,18 @@ function ProjectMgContainer(): JSX.Element {
     try {
       const values = await form.validateFields();
       // 修改
-        if (modal.operateType === "handle" && isNodeComplete(values)) {
-          const pStart = tools.formatDate(values.plannedStart, "YYYYMMDD")
-          const pEnd = tools.formatDate(values.plannedEnd, "YYYYMMDD")
-          const aStart = tools.formatDate(values.actualStart, "YYYYMMDD")
-          const aEnd = tools.formatDate(values.actualEnd, "YYYYMMDD")
-          
-          if((Number(pStart) > Number(pEnd)) || (Number(aStart) > Number(aEnd))){
-            message.error("开始时间不能小于结束时间"); 
-            return
-          }
+      if (modal.operateType === "handle" && isNodeComplete(values)) {
+        const pStart = tools.formatDate(values.plannedStart, "YYYYMMDD");
+        const pEnd = tools.formatDate(values.plannedEnd, "YYYYMMDD");
+        const aStart = tools.formatDate(values.actualStart, "YYYYMMDD");
+        const aEnd = tools.formatDate(values.actualEnd, "YYYYMMDD");
+
+        if (Number(pStart) > Number(pEnd) || Number(aStart) > Number(aEnd)) {
+          message.error("开始时间不能小于结束时间");
+          return;
         }
-        
+      }
+
       setModal({
         modalLoading: true,
       });
@@ -661,7 +682,9 @@ function ProjectMgContainer(): JSX.Element {
 
   const createStages = () => {
     const stages =
-      procedureInfoRef.current && procedureInfoRef.current.stages ? procedureInfoRef.current.stages : [];
+      procedureInfoRef.current && procedureInfoRef.current.stages
+        ? procedureInfoRef.current.stages
+        : [];
     return stages.map((stage: any) => {
       return {
         name: stage.stageName,
@@ -757,9 +780,12 @@ function ProjectMgContainer(): JSX.Element {
                           ) {
                             return <Text type="danger">{val}</Text>;
                           }
-   
+
                           if (
-                            record.durationLabel === "实际工期" && node.plannedDays && val && Number(node.plannedDays) < Number(val)
+                            record.durationLabel === "实际工期" &&
+                            node.plannedDays &&
+                            val &&
+                            Number(node.plannedDays) < Number(val)
                           ) {
                             return <Text type="danger">{val}</Text>;
                           }
@@ -839,28 +865,30 @@ function ProjectMgContainer(): JSX.Element {
 
   const userHandle = (users: string[]) => {
     const filterUser: (UserInfo | undefined)[] = users
-        .map((name: string) => {
-          const user:UserInfo | undefined  = userList.find((u: UserInfo) => u.username === name);
-          return user ? user : undefined
-        })
-        .filter((u) => u)
-      if (!filterUser.length) {
-        return '--'
-      }
-      const userObj: any = {}
-      filterUser.forEach((u: any) => {
-        const orgName = u.org.name as string
-        if (userObj[orgName]) {
-          userObj[orgName].push(u.name)
-        } else {
-          userObj[orgName] = [u.name]
-        }
+      .map((name: string) => {
+        const user: UserInfo | undefined = userList.find(
+          (u: UserInfo) => u.username === name
+        );
+        return user ? user : undefined;
       })
+      .filter((u) => u);
+    if (!filterUser.length) {
+      return "--";
+    }
+    const userObj: any = {};
+    filterUser.forEach((u: any) => {
+      const orgName = u.org.name as string;
+      if (userObj[orgName]) {
+        userObj[orgName].push(u.name);
+      } else {
+        userObj[orgName] = [u.name];
+      }
+    });
     return (
       <>
         {Object.keys(userObj).map((key) => (
           <div key={key}>
-            {key}（{userObj[key].join('、')}）
+            {key}（{userObj[key].join("、")}）
           </div>
         ))}
       </>

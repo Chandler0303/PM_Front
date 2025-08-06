@@ -9,12 +9,21 @@ import "normalize.css";
 import "@/assets/styles/default.less";
 import "@/assets/styles/global.less";
 
+import { ConfigProvider } from "antd";
+import zhCN from "antd/es/locale/zh_CN";
+import moment from "moment";
+import "moment/locale/zh-cn";
+
+moment.locale("zh-cn");
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <HashRouter>
-        <Router />
-      </HashRouter>
-    </Provider>
+    <ConfigProvider locale={zhCN}>
+      <Provider store={store}>
+        <HashRouter>
+          <Router />
+        </HashRouter>
+      </Provider>
+    </ConfigProvider>
   </React.StrictMode>
 );

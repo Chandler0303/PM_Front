@@ -87,7 +87,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 搜索相关参数
   const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    name: undefined
+    name: undefined,
   });
 
   // 权限树相关参数
@@ -362,7 +362,10 @@ function UserAdminContainer(): JSX.Element {
                 onClick={() => onModalShow(record, "up")}
               >
                 <Tooltip placement="top" title="修改">
-                  <ToolOutlined className="g-icon" style={{ marginRight: '10px' }} />
+                  <ToolOutlined
+                    className="g-icon"
+                    style={{ marginRight: "10px" }}
+                  />
                 </Tooltip>
               </span>
             </AuthWrapper>
@@ -373,7 +376,10 @@ function UserAdminContainer(): JSX.Element {
                 onClick={() => onTreeShowClick(record)}
               >
                 <Tooltip placement="top" title="分配权限">
-                  <EditOutlined className="g-icon" style={{ marginRight: '10px' }} />
+                  <EditOutlined
+                    className="g-icon"
+                    style={{ marginRight: "10px" }}
+                  />
                 </Tooltip>
               </span>
             </AuthWrapper>
@@ -387,7 +393,10 @@ function UserAdminContainer(): JSX.Element {
               >
                 <span className="control-btn">
                   <Tooltip placement="top" title="删除">
-                    <DeleteOutlined className="g-icon" style={{ color: 'red' }} />
+                    <DeleteOutlined
+                      className="g-icon"
+                      style={{ color: "red" }}
+                    />
                   </Tooltip>
                 </span>
               </Popconfirm>
@@ -442,7 +451,7 @@ function UserAdminContainer(): JSX.Element {
           loading={loading}
           dataSource={data}
           bordered
-          scroll={{x: 'max-content', y: '65vh'}}
+          scroll={{ x: "max-content", y: "65vh" }}
           pagination={false}
         />
       </div>

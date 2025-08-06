@@ -183,7 +183,7 @@ const tools = {
     }
     const start = dayjs(this.formatDate(startDate, "YYYY-MM-DD"));
     const end = dayjs(this.formatDate(endDate, "YYYY-MM-DD"));
-    const diffDays = end.diff(start, 'day'); // 结果：5
+    const diffDays = end.diff(start, "day"); // 结果：5
     return diffDays;
   },
 };

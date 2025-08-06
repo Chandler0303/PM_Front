@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 const DynamicIcon = ({ iconName, ...props }: any) => {
   const [IconComponent, setIconComponent] = useState<any>(null);
@@ -6,7 +6,7 @@ const DynamicIcon = ({ iconName, ...props }: any) => {
   useEffect(() => {
     const loadIcon = async () => {
       try {
-        const { [iconName]: Icon }: any = await import('@ant-design/icons');
+        const { [iconName]: Icon }: any = await import("@ant-design/icons");
         setIconComponent(() => Icon);
       } catch (error) {
         console.error(`Icon ${iconName} not found`);
@@ -19,4 +19,4 @@ const DynamicIcon = ({ iconName, ...props }: any) => {
   return IconComponent ? <IconComponent {...props} /> : null;
 };
 
-export default DynamicIcon
+export default DynamicIcon;

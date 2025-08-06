@@ -214,7 +214,7 @@ function ProcedureManagementContainer(): JSX.Element {
               value={currentStage?.stageName}
               onChange={segmentChange}
             />
-            <div style={{ maxHeight: '55vh', overflow: 'auto' }}>
+            <div style={{ maxHeight: "55vh", overflow: "auto" }}>
               {currentStage &&
                 currentStage.nodes.map((item: any) => (
                   <div key={item.seq}>
@@ -250,7 +250,11 @@ function ProcedureManagementContainer(): JSX.Element {
                 ))}
             </div>
             <AuthWrapper code="edit:procedureconfig">
-              <Button style={{marginTop: '20px'}} type="primary" onClick={handleSubmit}>
+              <Button
+                style={{ marginTop: "20px" }}
+                type="primary"
+                onClick={handleSubmit}
+              >
                 提交
               </Button>
             </AuthWrapper>

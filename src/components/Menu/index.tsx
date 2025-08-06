@@ -92,7 +92,9 @@ export default function MenuCom(props: Props): JSX.Element {
         return {
           label: (
             <>
-              {!item.parent && item.icon ? <DynamicIcon iconName={item.icon} /> : null}
+              {!item.parent && item.icon ? (
+                <DynamicIcon iconName={item.icon} />
+              ) : null}
               <span>{item.title}</span>
             </>
           ),
