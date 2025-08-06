@@ -7,9 +7,7 @@ export default {
   /**
    * 条件分页查询用户列表
    * **/
-  async getUserList(params: {
-    username?: string;
-  }) {
+  async getUserList(params: { name?: string }) {
     try {
       const res: Res = await axios.get(
         `/api/user/list?${qs.stringify(params)}`

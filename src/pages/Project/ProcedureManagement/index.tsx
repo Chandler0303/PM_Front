@@ -60,9 +60,8 @@ function ProcedureManagementContainer(): JSX.Element {
   }
 
   async function onGetUserData(): Promise<void> {
-
     try {
-      const res = await sysApi.getUserList(tools.clearNull({username: ''}));
+      const res = await sysApi.getUserList(tools.clearNull({ name: "" }));
       if (res && res.success) {
         setUserData(
           res.data.map((item: UserInfo) => {
@@ -215,41 +214,43 @@ function ProcedureManagementContainer(): JSX.Element {
               value={currentStage?.stageName}
               onChange={segmentChange}
             />
-            {currentStage &&
-              currentStage.nodes.map((item: any) => (
-                <div key={item.seq}>
-                  <div className="g-flex" style={{ marginBottom: 20 }}>
-                    <span className="line"></span>
-                    <h3>{item.name}</h3>
-                  </div>
+            <div style={{ maxHeight: '55vh', overflow: 'auto' }}>
+              {currentStage &&
+                currentStage.nodes.map((item: any) => (
+                  <div key={item.seq}>
+                    <div className="g-flex" style={{ marginBottom: 20 }}>
+                      <span className="line"></span>
+                      <h3>{item.name}</h3>
+                    </div>
 
-                  <Form.Item
-                    name={["nodes", item.name, "plannedDays"]}
-                    label="制度要求时间："
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      placeholder="请输入制度要求时间"
-                      disabled={!isEdit}
-                      min={0}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    name={["nodes", item.name, "participants"]}
-                    label="负责人："
-                  >
-                    <Select
-                      style={{ width: "100%" }}
-                      placeholder="请选择负责人"
-                      mode="multiple"
-                      disabled={!isEdit}
-                      options={userData}
-                    />
-                  </Form.Item>
-                </div>
-              ))}
+                    <Form.Item
+                      name={["nodes", item.name, "plannedDays"]}
+                      label="制度要求时间："
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        placeholder="请输入制度要求时间"
+                        disabled={!isEdit}
+                        min={0}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name={["nodes", item.name, "participants"]}
+                      label="负责人："
+                    >
+                      <Select
+                        style={{ width: "100%" }}
+                        placeholder="请选择负责人"
+                        mode="multiple"
+                        disabled={!isEdit}
+                        options={userData}
+                      />
+                    </Form.Item>
+                  </div>
+                ))}
+            </div>
             <AuthWrapper code="edit:procedureconfig">
-              <Button type="primary" onClick={handleSubmit}>
+              <Button style={{marginTop: '20px'}} type="primary" onClick={handleSubmit}>
                 提交
               </Button>
             </AuthWrapper>

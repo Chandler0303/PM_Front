@@ -2,7 +2,7 @@
 export interface MenuParam {
   id?: number; // ID,添加时可以没有id
   title: string; // 标题
-  icon: string; // 图标
+  icon?: string; // 图标
   url: string; // 链接路径
   parent: number | null; // 父级ID
   desc: string; // 描述

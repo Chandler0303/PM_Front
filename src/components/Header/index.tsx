@@ -117,35 +117,6 @@ export default function HeaderCom(props: Props): JSX.Element {
               onClick: onMenuClick,
               items: [
                 {
-                  key: "item-1",
-                  label: (
-                    <a
-                      href="https://blog.isluo.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ChromeOutlined />
-                      blog.isluo.com
-                    </a>
-                  ),
-                },
-                {
-                  key: "item-2",
-                  label: (
-                    <a
-                      href="https://github.com/javaLuo/react-admin"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <GithubOutlined />
-                      GitHub
-                    </a>
-                  ),
-                },
-                {
-                  type: "divider",
-                },
-                {
                   key: "logout",
                   label: (
                     <>

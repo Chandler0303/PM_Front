@@ -37,10 +37,10 @@ export default {
   },
   async editProjectNode(params: any) {
     try {
-        const res: Res = await axios.put(`/api/project/node/modify`, params)
-        return res
+      const res: Res = await axios.put(`/api/project/node/modify`, params);
+      return res;
     } catch (err) {
-        message.error("网络错误，请重试");
+      message.error("网络错误，请重试");
     }
   },
   /**

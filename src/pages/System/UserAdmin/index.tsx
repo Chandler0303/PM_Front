@@ -77,7 +77,6 @@ function UserAdminContainer(): JSX.Element {
   const [orgData, setOrgData] = useState<SelectData[]>([]);
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
 
-
   // 模态框相关参数
   const [modal, setModal] = useSetState<ModalType>({
     operateType: "add", // add添加，up修改
@@ -88,7 +87,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 搜索相关参数
   const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    username: undefined, // 账号
+    name: undefined
   });
 
   // 权限树相关参数
@@ -129,7 +128,7 @@ function UserAdminContainer(): JSX.Element {
   // 函数 - 查询当前页面所需列表数据
   async function onGetData(): Promise<void> {
     const params = {
-      username: searchInfo.username,
+      name: searchInfo.name,
     };
     setLoading(true);
     try {
@@ -148,9 +147,7 @@ function UserAdminContainer(): JSX.Element {
   const searchUsernameChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
-    if (e.target.value.length < 20) {
-      setSearchInfo({ username: e.target.value });
-    }
+    setSearchInfo({ name: e.target.value });
   };
 
   // 搜索
@@ -330,8 +327,8 @@ function UserAdminContainer(): JSX.Element {
   const tableColumns = [
     {
       title: "序号",
-      dataIndex: "serial",
-      key: "serial",
+      dataIndex: "id",
+      key: "id",
     },
     {
       title: "账号",
@@ -365,7 +362,7 @@ function UserAdminContainer(): JSX.Element {
                 onClick={() => onModalShow(record, "up")}
               >
                 <Tooltip placement="top" title="修改">
-                  <ToolOutlined />
+                  <ToolOutlined className="g-icon" style={{ marginRight: '10px' }} />
                 </Tooltip>
               </span>
             </AuthWrapper>
@@ -376,7 +373,7 @@ function UserAdminContainer(): JSX.Element {
                 onClick={() => onTreeShowClick(record)}
               >
                 <Tooltip placement="top" title="分配权限">
-                  <EditOutlined />
+                  <EditOutlined className="g-icon" style={{ marginRight: '10px' }} />
                 </Tooltip>
               </span>
             </AuthWrapper>
@@ -388,9 +385,9 @@ function UserAdminContainer(): JSX.Element {
                 okText="确定"
                 cancelText="取消"
               >
-                <span className="control-btn red">
+                <span className="control-btn">
                   <Tooltip placement="top" title="删除">
-                    <DeleteOutlined />
+                    <DeleteOutlined className="g-icon" style={{ color: 'red' }} />
                   </Tooltip>
                 </span>
               </Popconfirm>
@@ -422,9 +419,9 @@ function UserAdminContainer(): JSX.Element {
           <ul className="search-ul">
             <li>
               <Input
-                placeholder="请输入账号"
+                placeholder="请输入昵称"
                 onChange={searchUsernameChange}
-                value={searchInfo.username}
+                value={searchInfo.name}
               />
             </li>
             <li>
@@ -445,6 +442,7 @@ function UserAdminContainer(): JSX.Element {
           loading={loading}
           dataSource={data}
           bordered
+          scroll={{x: 'max-content', y: '65vh'}}
           pagination={false}
         />
       </div>

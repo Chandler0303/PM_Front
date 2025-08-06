@@ -27,7 +27,7 @@ export type ModalType = {
 };
 
 export type SearchInfo = {
-  username: string | undefined; // 用户名
+  name: string | undefined; // 用户名
 };
 
 export type RoleTreeInfo = {

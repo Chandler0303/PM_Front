@@ -1,6 +1,6 @@
 /** 这个文件封装了一些常用的工具函数 **/
-import dayjs from 'dayjs'
-import moment from 'moment'
+import dayjs from "dayjs";
+import moment from "moment";
 const tools = {
   /**
    * 保留N位小数
@@ -163,29 +163,29 @@ const tools = {
       return item;
     });
   },
-  formatDate(date: Date | string, format: string = 'YYYY/MM/DD HH:mm:ss'){
+  formatDate(date: Date | string, format: string = "YYYY/MM/DD HH:mm:ss") {
     if (!date) {
-      return ''
+      return "";
     }
     const now = dayjs(date);
     const str = now.format(format);
-    return str
+    return str;
   },
-  formatAntDate(date: Date | string, format:string){
+  formatAntDate(date: Date | string, format: string) {
     if (!date) {
-      return ''
+      return "";
     }
-    return moment(date, format)
+    return moment(date, format);
   },
   diffDays(startDate: string | Date, endDate: string | Date) {
     if (!startDate || !endDate) {
-      return ''
+      return "";
     }
-    const start = this.formatDate(startDate, 'YYYYMMDD');
-    const end = this.formatDate(endDate, 'YYYYMMDD');
-    const diff = Number(end) - Number(start)
-    return diff
-  }
+    const start = dayjs(this.formatDate(startDate, "YYYY-MM-DD"));
+    const end = dayjs(this.formatDate(endDate, "YYYY-MM-DD"));
+    const diffDays = end.diff(start, 'day'); // 结果：5
+    return diffDays;
+  },
 };
 
 export default tools;

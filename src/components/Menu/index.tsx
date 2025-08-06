@@ -15,13 +15,13 @@ const { Sider } = Layout;
 // ==================
 import "./index.less";
 import ImgLogo from "@/assets/logo.png";
-import Icon from "@/components/Icon";
 
 // ==================
 // 类型声明
 // ==================
 import type { Menu } from "@/models/index.type";
 import type { ItemType } from "antd/lib/menu/hooks/useItems";
+import DynamicIcon from "@/components/Icon";
 
 interface Props {
   data: Menu[]; // 所有的菜单数据
@@ -80,7 +80,7 @@ export default function MenuCom(props: Props): JSX.Element {
           label:
             !item.parent && item.icon ? (
               <span>
-                <Icon type={item.icon} />
+                <DynamicIcon iconName={item.icon} />
                 <span>{item.title}</span>
               </span>
             ) : (
@@ -92,7 +92,7 @@ export default function MenuCom(props: Props): JSX.Element {
         return {
           label: (
             <>
-              {!item.parent && item.icon ? <Icon type={item.icon} /> : null}
+              {!item.parent && item.icon ? <DynamicIcon iconName={item.icon} /> : null}
               <span>{item.title}</span>
             </>
           ),
@@ -129,7 +129,7 @@ export default function MenuCom(props: Props): JSX.Element {
       <div className={props.collapsed ? "menuLogo hide" : "menuLogo"}>
         <Link to="/">
           <img src={ImgLogo} />
-          <div>React-Admin</div>
+          <div>PM</div>
         </Link>
       </div>
       <MenuAntd

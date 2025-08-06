@@ -3,7 +3,7 @@ export const menus = [
   {
     id: 1,
     title: "首页",
-    icon: "icon-home",
+    icon: "DesktopOutlined",
     url: "/home",
     parent: null,
     desc: "首页",
@@ -12,7 +12,7 @@ export const menus = [
   {
     id: 2,
     title: "项目管理",
-    icon: "icon-setting",
+    icon: "MenuOutlined",
     url: "/project",
     parent: null,
     desc: "项目管理目录分支",
@@ -21,7 +21,6 @@ export const menus = [
   {
     id: 3,
     title: "项目管理",
-    icon: "icon-user",
     url: "/project/management",
     parent: 2,
     desc: "项目管理/项目管理",
@@ -30,7 +29,6 @@ export const menus = [
   {
     id: 4,
     title: "流程管理",
-    icon: "icon-user",
     url: "/project/procedureMg",
     parent: 2,
     desc: "项目管理/流程管理",
@@ -39,7 +37,7 @@ export const menus = [
   {
     id: 5,
     title: "系统管理",
-    icon: "icon-setting",
+    icon: "SettingOutlined",
     url: "/system",
     parent: null,
     desc: "系统管理目录分支",
@@ -48,7 +46,6 @@ export const menus = [
   {
     id: 6,
     title: "用户管理",
-    icon: "icon-user",
     url: "/system/useradmin",
     parent: 5,
     desc: "系统管理/用户管理",
@@ -68,6 +65,6 @@ export const powers = [
   },
   {
     id: "1003",
-    name: "回退任务",
+    name: "流程督查",
   },
 ];

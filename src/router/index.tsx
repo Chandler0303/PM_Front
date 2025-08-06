@@ -12,7 +12,6 @@ import loadable from "@loadable/component";
 // ==================
 // 自定义的东西
 // ==================
-import tools from "@/util/tools";
 
 // ==================
 // 组件

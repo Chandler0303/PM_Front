@@ -71,7 +71,7 @@ function LoginContainer(): JSX.Element {
         <Form form={form}>
           <div className="title">
             <img src={LogoImg} alt="logo" />
-            <span>Project-Management</span>
+            <span>PM</span>
           </div>
           <div>
             <Form.Item
@@ -89,7 +89,7 @@ function LoginContainer(): JSX.Element {
                 prefix={<UserOutlined style={{ fontSize: 13 }} />}
                 size="large"
                 id="username" // 为了获取焦点
-                placeholder="admin"
+                placeholder="请输入用户名"
                 onPressEnter={onSubmit}
               />
             </Form.Item>
@@ -104,7 +104,7 @@ function LoginContainer(): JSX.Element {
                 prefix={<KeyOutlined style={{ fontSize: 13 }} />}
                 size="large"
                 type="password"
-                placeholder="123"
+                placeholder="请输入密码"
                 onPressEnter={onSubmit}
               />
             </Form.Item>

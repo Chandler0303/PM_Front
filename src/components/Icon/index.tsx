@@ -1,15 +1,22 @@
-/* 用于菜单的自定义图标 */
-import React from "react";
-import { createFromIconfontCN } from "@ant-design/icons";
+import React, { useState, useEffect } from 'react';
 
-const IconFont = createFromIconfontCN({
-  scriptUrl: "//at.alicdn.com/t/font_1688075_vwak21i2wxj.js",
-});
+const DynamicIcon = ({ iconName, ...props }: any) => {
+  const [IconComponent, setIconComponent] = useState<any>(null);
 
-interface Props {
-  type: string;
-}
+  useEffect(() => {
+    const loadIcon = async () => {
+      try {
+        const { [iconName]: Icon }: any = await import('@ant-design/icons');
+        setIconComponent(() => Icon);
+      } catch (error) {
+        console.error(`Icon ${iconName} not found`);
+      }
+    };
 
-export default function Icon(props: Props): JSX.Element {
-  return <IconFont type={props.type} />;
-}
+    loadIcon();
+  }, [iconName]);
+
+  return IconComponent ? <IconComponent {...props} /> : null;
+};
+
+export default DynamicIcon
