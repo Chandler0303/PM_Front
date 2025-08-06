@@ -60,13 +60,9 @@ function ProcedureManagementContainer(): JSX.Element {
   }
 
   async function onGetUserData(): Promise<void> {
-    const params = {
-      pageNum: 1,
-      pageSize: 10,
-    };
 
     try {
-      const res = await sysApi.getUserList(tools.clearNull(params));
+      const res = await sysApi.getUserList(tools.clearNull({username: ''}));
       if (res && res.success) {
         setUserData(
           res.data.map((item: UserInfo) => {

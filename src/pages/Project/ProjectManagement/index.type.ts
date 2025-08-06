@@ -30,8 +30,8 @@ export type ModalType = {
 };
 
 export type SearchInfo = {
-  username: string | undefined; // 用户名
-  conditions: number | undefined; // 状态
+  name: string | undefined;
+  delayedStatus: number | undefined; // 状态
 };
 
 export type RoleTreeInfo = {

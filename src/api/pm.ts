@@ -4,10 +4,10 @@ import { message } from "antd";
 import qs from "qs";
 
 export default {
-  async getProjectList(params: { pageNum: number; pageSize: number }) {
+  async getProjectList(params: any) {
     try {
       const res: Res = await axios.get(
-        `/api/project/page?${qs.stringify(params)}`
+        `/api/project/list?${qs.stringify(params)}`
       );
       return res;
     } catch (err) {

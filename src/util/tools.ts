@@ -163,7 +163,7 @@ const tools = {
       return item;
     });
   },
-  formatDate(date: Date, format: string = 'YYYY/MM/DD HH:mm:ss'){
+  formatDate(date: Date | string, format: string = 'YYYY/MM/DD HH:mm:ss'){
     if (!date) {
       return ''
     }
@@ -181,10 +181,10 @@ const tools = {
     if (!startDate || !endDate) {
       return ''
     }
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    console.log(end.diff(start, 'day'))
-    return end.diff(start, 'day');  // 返回两个日期相差多少整天
+    const start = this.formatDate(startDate, 'YYYYMMDD');
+    const end = this.formatDate(endDate, 'YYYYMMDD');
+    const diff = Number(end) - Number(start)
+    return diff
   }
 };
 

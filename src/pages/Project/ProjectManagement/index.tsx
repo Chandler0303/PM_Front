@@ -17,7 +17,10 @@ import {
   DatePicker,
   Tooltip,
   Popconfirm,
+  Typography,
 } from "antd";
+const { Text } = Typography;
+
 import {
   DeleteOutlined,
   EditOutlined,
@@ -92,7 +95,7 @@ function ProjectMgContainer(): JSX.Element {
       title: "序号",
       dataIndex: "id",
       key: "id",
-      width: 150,
+      width: 100,
       onCell: (record: any) => ({
         rowSpan: record.rowSpan,
       }),
@@ -110,7 +113,7 @@ function ProjectMgContainer(): JSX.Element {
       title: "年度",
       dataIndex: "year",
       key: "year",
-      width: 150,
+      width: 100,
       onCell: (record: any) => ({
         rowSpan: record.rowSpan,
       }),
@@ -137,7 +140,7 @@ function ProjectMgContainer(): JSX.Element {
       title: "项目类型",
       dataIndex: "type",
       key: "type",
-      width: 150,
+      width: 100,
       render: (v: number, record: TableRecordData) => {
         const data = projectTypeDict.find((s) => s.value == v);
         return data ? data.label : "--";
@@ -164,7 +167,7 @@ function ProjectMgContainer(): JSX.Element {
       title: "工程状态",
       dataIndex: "status",
       key: "status",
-      width: 150,
+      width: 100,
       render: (v: number, record: TableRecordData) => {
         const data = projectStatusDict.find((s) => s.value == v);
         return data ? data.label : "--";
@@ -177,7 +180,7 @@ function ProjectMgContainer(): JSX.Element {
       title: "分公司",
       dataIndex: "companyName",
       key: "companyName",
-      width: 150,
+      width: 100,
       render: (v: number, record: TableRecordData) => {
         return record.company ? record.company.name : "--";
       },
@@ -189,14 +192,14 @@ function ProjectMgContainer(): JSX.Element {
       title: "时间点",
       key: "durationLabel",
       dataIndex: "durationLabel",
-      width: 150,
+      width: 100,
     },
     {
       title: "操作",
       key: "control",
       dataIndex: "control",
       fixed: "right",
-      width: 200,
+      width:100,
       render: (v: null, record: TableRecordData) => {
         return (
           <>
@@ -244,12 +247,6 @@ function ProjectMgContainer(): JSX.Element {
     },
   ]);
 
-  // 分页相关参数
-  const [page, setPage] = useSetState<Page>({
-    pageNum: 1,
-    pageSize: 10,
-    total: 0,
-  });
 
   // 模态框相关参数
   const [modal, setModal] = useSetState<ModalType>({
@@ -261,8 +258,8 @@ function ProjectMgContainer(): JSX.Element {
 
   // 搜索相关参数
   const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    username: undefined, // 用户名
-    conditions: undefined, // 状态
+    name: undefined, // 用户名
+    delayedStatus: undefined, // 状态
   });
 
   // 生命周期 - 组件挂载时触发一次
@@ -270,25 +267,24 @@ function ProjectMgContainer(): JSX.Element {
     onGetCompanyData();
     onGetUserData();
     onGetProcedureData();
-    onGetData(page);
+    onGetData();
   });
 
   // 函数 - 查询当前页面所需列表数据
-  async function onGetData(page: {
-    pageNum: number;
-    pageSize: number;
-  }): Promise<void> {
-    const params = {
-      pageNum: page.pageNum,
-      pageSize: page.pageSize,
-    };
+  async function onGetData(): Promise<void> {
     setLoading(true);
     try {
-      const res = await pmApi.getProjectList(tools.clearNull(params));
+      const res = await pmApi.getProjectList({
+        ...searchInfo
+      });
       if (res && res.success) {
         const list: TableRecordData[] = [];
         let sum = 0;
-        res.data.forEach((item: TableRecordData) => {
+        let data = res.data
+        if (searchInfo.delayedStatus) {
+          data = filterDataHandle(data)
+        }
+        data.forEach((item: TableRecordData) => {
           list.push({
             ...item,
             newId: item.id + "-" + sum++,
@@ -311,17 +307,34 @@ function ProjectMgContainer(): JSX.Element {
           });
         });
         setData(tools.processRowSpan(list, "id"));
-        setPage({
-          pageNum: page.pageNum,
-          pageSize: page.pageSize,
-          total: res.data.length,
-        });
       } else {
         message.error(res?.message ?? "数据获取失败");
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  function filterDataHandle (data: any[]) {
+    data = data.filter(p => {
+      let isDelay = searchInfo.delayedStatus === -1 ? false : true
+      p.stages.forEach(s => {
+          s.nodes.forEach(n => {
+            if (n.plannedStart && n.plannedEnd && n.actualEnd && n.actualStart) {
+              const pStart = new Date(tools.formatDate(n.plannedStart, 'YYYY-MM-DD')).getTime()
+              const pEnd = new Date(tools.formatDate(n.plannedEnd, 'YYYY-MM-DD')).getTime()
+              const aStart = new Date(tools.formatDate(n.actualStart, 'YYYY-MM-DD')).getTime()
+              const aEnd = new Date(tools.formatDate(n.actualEnd, 'YYYY-MM-DD')).getTime()
+              if ((aEnd - aStart) > (pEnd - pStart)) {
+                isDelay = searchInfo.delayedStatus === -1 ? true : false
+              }
+            }
+          })
+      })
+      return isDelay  
+    }) 
+
+    return data
   }
 
   async function onGetProcedureData(): Promise<void> {
@@ -361,12 +374,8 @@ function ProjectMgContainer(): JSX.Element {
 
   // 用户
   async function onGetUserData(): Promise<void> {
-    const params = {
-      pageNum: 1,
-      pageSize: 9999,
-    };
     try {
-      const res = await sysApi.getUserList(tools.clearNull(params));
+      const res = await sysApi.getUserList(tools.clearNull({username: ''}));
       if (res && res.success) {
         userList = res.data;
       } else {
@@ -380,19 +389,17 @@ function ProjectMgContainer(): JSX.Element {
   const searchUsernameChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
-    if (e.target.value.length < 20) {
-      setSearchInfo({ username: e.target.value });
-    }
+    setSearchInfo({ name: e.target.value });
   };
 
   // 搜索 - 状态下拉框选择时触发
   const searchConditionsChange = (v: number): void => {
-    setSearchInfo({ conditions: v });
+    setSearchInfo({ delayedStatus: v });
   };
 
   // 搜索
   const onSearch = (): void => {
-    onGetData(page);
+    onGetData();
   };
 
   /**
@@ -430,7 +437,9 @@ function ProjectMgContainer(): JSX.Element {
       } else {
         if (data) {
           const nodes: SelectData[] = [];
+          data.stages.sort((a, b) => a.seq - b.seq)
           data.stages.forEach((stage) => {
+            stage.nodes.sort((a, b) => a.seq - b.seq)
             stage.nodes.forEach((node) => {
               node.parent = {
                 name: stage.name,
@@ -443,6 +452,7 @@ function ProjectMgContainer(): JSX.Element {
               });
             });
           });
+          
           setNodesData(nodes);
           // 获取当前进度节点
           const node =
@@ -537,7 +547,7 @@ function ProjectMgContainer(): JSX.Element {
           });
           if (res && res.success) {
             message.success("添加成功");
-            onGetData(page);
+            onGetData();
             onClose();
           } else {
             message.error(res?.message ?? "操作失败");
@@ -556,7 +566,7 @@ function ProjectMgContainer(): JSX.Element {
           });
           if (res && res.success) {
             message.success("修改成功");
-            onGetData(page);
+            onGetData();
             onClose();
           } else {
             message.error(res?.message ?? "操作失败");
@@ -576,7 +586,7 @@ function ProjectMgContainer(): JSX.Element {
           });
           if (res && res.success) {
             message.success("修改成功");
-            onGetData(page);
+            onGetData();
             onClose();
           } else {
             message.error(res?.message ?? "操作失败");
@@ -598,7 +608,7 @@ function ProjectMgContainer(): JSX.Element {
       const res = await pmApi.delProject({ id });
       if (res && res.success) {
         message.success("删除成功");
-        onGetData(page);
+        onGetData();
       } else {
         message.error(res?.message ?? "操作失败");
       }
@@ -632,10 +642,6 @@ function ProjectMgContainer(): JSX.Element {
     });
   };
 
-  // 表格页码改变
-  const onTablePageChange = (pageNum: number, pageSize: number): void => {
-    onGetData({ pageNum, pageSize });
-  };
 
   // ==================
   // 属性 和 memo
@@ -656,13 +662,13 @@ function ProjectMgContainer(): JSX.Element {
                 children: [
                   {
                     title: node.plannedDays || "--",
-                    width: 150,
                     children: [
                       {
                         title: "开始时间",
                         key: stage.seq + "-" + node.seq + "-" + "start",
                         dataIndex: stage.seq + "-" + node.seq + "-" + "tart",
-                        width: 150,
+                        align: 'center',
+                        width: 100,
                         onCell: (record, index) => {
                           return {
                             colSpan:
@@ -703,6 +709,10 @@ function ProjectMgContainer(): JSX.Element {
                               );
                               break;
                           }
+
+                          if (record.durationLabel === "偏差分析" && Number(val) < 0) {
+                            return <Text type="danger">{val}</Text>;
+                          }
                           return val;
                         },
                       },
@@ -710,7 +720,8 @@ function ProjectMgContainer(): JSX.Element {
                         title: "结束时间",
                         key: stage.seq + "-" + node.seq + "-" + "end",
                         dataIndex: stage.seq + "-" + node.seq + "-" + "end",
-                        width: 150,
+                        width: 100,
+                        align: 'center',
                         onCell: (record, index) => {
                           return {
                             colSpan:
@@ -751,6 +762,9 @@ function ProjectMgContainer(): JSX.Element {
                               );
                               break;
                           }
+                           if (record.durationLabel === "偏差分析" && Number(val) < 0) {
+                            return <Text type="danger">{val}</Text>;
+                          }
                           return val;
                         },
                       },
@@ -777,7 +791,7 @@ function ProjectMgContainer(): JSX.Element {
         return user ? user.name : "";
       })
       .filter((u) => u)
-      .join("，");
+      .join("，") || '--';
   };
 
   return (
@@ -801,21 +815,21 @@ function ProjectMgContainer(): JSX.Element {
           <ul className="search-ul">
             <li>
               <Input
-                placeholder="请输入用户名"
+                placeholder="请输工程名"
                 onChange={searchUsernameChange}
-                value={searchInfo.username}
+                value={searchInfo.name}
               />
             </li>
             <li>
               <Select
-                placeholder="请选择状态"
+                placeholder="请选择延期状态"
                 allowClear
                 style={{ width: "200px" }}
                 onChange={searchConditionsChange}
-                value={searchInfo.conditions}
+                value={searchInfo.delayedStatus}
               >
-                <Option value={1}>启用</Option>
-                <Option value={-1}>禁用</Option>
+                <Option value={-1}>延期</Option>
+                <Option value={1}>正常</Option>
               </Select>
             </li>
             <li>
@@ -836,16 +850,10 @@ function ProjectMgContainer(): JSX.Element {
           loading={loading}
           dataSource={data}
           rowKey="newId"
-          scroll={{ x: "max-content", y: 55 * 5 }}
+          scroll={{ x: "max-content", y: '45vh' }}
           bordered
-          pagination={{
-            total: page.total,
-            current: page.pageNum,
-            pageSize: page.pageSize,
-            showQuickJumper: true,
-            showTotal: (t) => `共 ${t} 条数据`,
-            onChange: onTablePageChange,
-          }}
+          size="small"
+          pagination={false}
         />
       </div>
 

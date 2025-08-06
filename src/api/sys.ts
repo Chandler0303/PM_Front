@@ -8,10 +8,7 @@ export default {
    * 条件分页查询用户列表
    * **/
   async getUserList(params: {
-    pageNum: number;
-    pageSize: number;
     username?: string;
-    conditions?: number;
   }) {
     try {
       const res: Res = await axios.get(

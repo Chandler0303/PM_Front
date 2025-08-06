@@ -3,7 +3,7 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useSetState, useMount } from "react-use";
 import {
   Form,
@@ -61,7 +61,6 @@ import {
   UserBasicInfoParam,
   OrgInfo,
 } from "./index.type";
-import { Dispatch } from "@/store";
 
 // ==================
 // CSS
@@ -78,12 +77,6 @@ function UserAdminContainer(): JSX.Element {
   const [orgData, setOrgData] = useState<SelectData[]>([]);
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
 
-  // 分页相关参数
-  const [page, setPage] = useSetState<Page>({
-    pageNum: 1,
-    pageSize: 10,
-    total: 0,
-  });
 
   // 模态框相关参数
   const [modal, setModal] = useSetState<ModalType>({
@@ -110,7 +103,7 @@ function UserAdminContainer(): JSX.Element {
   useMount(() => {
     console.log("UserAdminContainer mounted");
     onGetOrgData();
-    onGetData(page);
+    onGetData();
   });
 
   // 查询部门
@@ -134,13 +127,8 @@ function UserAdminContainer(): JSX.Element {
   }
 
   // 函数 - 查询当前页面所需列表数据
-  async function onGetData(page: {
-    pageNum: number;
-    pageSize: number;
-  }): Promise<void> {
+  async function onGetData(): Promise<void> {
     const params = {
-      pageNum: page.pageNum,
-      pageSize: page.pageSize,
       username: searchInfo.username,
     };
     setLoading(true);
@@ -148,11 +136,6 @@ function UserAdminContainer(): JSX.Element {
       const res = await sysApi.getUserList(tools.clearNull(params));
       if (res && res.success) {
         setData(res.data);
-        setPage({
-          pageNum: page.pageNum,
-          pageSize: page.pageSize,
-          total: res.data.length,
-        });
       } else {
         message.error(res?.message ?? "数据获取失败");
       }
@@ -172,7 +155,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 搜索
   const onSearch = (): void => {
-    onGetData(page);
+    onGetData();
   };
 
   /**
@@ -224,7 +207,7 @@ function UserAdminContainer(): JSX.Element {
           const res: Res | undefined = await sysApi.addUser(params);
           if (res && res.success) {
             message.success("添加成功");
-            onGetData(page);
+            onGetData();
             onClose();
           } else {
             message.error(res?.message ?? "操作失败");
@@ -244,7 +227,7 @@ function UserAdminContainer(): JSX.Element {
           const res: Res | undefined = await sysApi.upUser(id, params);
           if (res && res.success) {
             message.success("修改成功");
-            onGetData(page);
+            onGetData();
             onClose();
           } else {
             message.error(res?.message ?? "操作失败");
@@ -267,7 +250,7 @@ function UserAdminContainer(): JSX.Element {
       const res = await sysApi.delUser({ id });
       if (res && res.success) {
         message.success("删除成功");
-        onGetData(page);
+        onGetData();
       } else {
         message.error(res?.message ?? "操作失败");
       }
@@ -320,7 +303,7 @@ function UserAdminContainer(): JSX.Element {
       const res: Res = await sysApi.upUser(modal.nowData.id, params);
       if (res && res.success) {
         message.success("分配成功");
-        onGetData(page);
+        onGetData();
         onRoleClose();
       } else {
         message.error(res?.message ?? "操作失败");
@@ -337,11 +320,6 @@ function UserAdminContainer(): JSX.Element {
     setRole({
       roleTreeShow: false,
     });
-  };
-
-  // 表格页码改变
-  const onTablePageChange = (pageNum: number, pageSize: number): void => {
-    onGetData({ pageNum, pageSize });
   };
 
   // ==================
@@ -423,23 +401,6 @@ function UserAdminContainer(): JSX.Element {
     },
   ];
 
-  // table列表所需数据
-  // table列表所需数据
-  const tableData = useMemo(() => {
-    return data.map((item, index) => {
-      return {
-        key: index,
-        id: item.id,
-        serial: index + 1 + (page.pageNum - 1) * page.pageSize,
-        username: item.username,
-        password: item.password,
-        name: item.name,
-        org: item.org,
-        permissions: item.permissions,
-      };
-    });
-  }, [page, data]);
-
   return (
     <div>
       <div className="g-search">
@@ -482,16 +443,9 @@ function UserAdminContainer(): JSX.Element {
         <Table
           columns={tableColumns}
           loading={loading}
-          dataSource={tableData}
+          dataSource={data}
           bordered
-          pagination={{
-            total: page.total,
-            current: page.pageNum,
-            pageSize: page.pageSize,
-            showQuickJumper: true,
-            showTotal: (t) => `共 ${t} 条数据`,
-            onChange: onTablePageChange,
-          }}
+          pagination={false}
         />
       </div>
 
