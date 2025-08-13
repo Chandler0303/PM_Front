@@ -457,7 +457,7 @@ const getProcedureList = function (p) {
           stageName: "总包结算阶段",
           nodes: [
             {
-              name: "报送结算资料",
+              name: "接收结算资料",
               plannedDays: 10,
               participants: [1, 3, 4],
             },
@@ -493,7 +493,7 @@ const getProcedureList = function (p) {
               participants: [1, 3, 4],
             },
             {
-              name: "核实各自业务是否完成",
+              name: "核实项目账务情况",
               plannedDays: 5,
               participants: [1, 3, 4],
             },

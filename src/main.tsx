@@ -11,9 +11,8 @@ import "@/assets/styles/global.less";
 
 import { ConfigProvider } from "antd";
 import zhCN from "antd/es/locale/zh_CN";
-import moment from "moment";
-import "moment/locale/zh-cn";
-
+import moment from "moment/dist/moment";
+import "moment/dist/locale/zh-cn";
 moment.locale("zh-cn");
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

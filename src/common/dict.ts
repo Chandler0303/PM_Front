@@ -17,8 +17,9 @@ export const projectTypeDict = [
   {
     label: "资本类",
     value: 1,
-  },{
+  },
+  {
     label: "成本类",
-    value: 2
+    value: 2,
   },
 ];

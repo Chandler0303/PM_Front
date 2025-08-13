@@ -10,6 +10,7 @@ export type ProjectInfo = {
   amount: string;
   stage: number;
   stages: any[];
+  shelve: number;
   company: number;
 };
 
@@ -17,6 +18,7 @@ export type ProjectInfo = {
 export interface TableRecordData extends ProjectInfo {
   id: number;
   newId?: string;
+  index?: number;
   durationLabel?: string;
 }
 
@@ -31,7 +33,8 @@ export type ModalType = {
 
 export type SearchInfo = {
   name: string | undefined;
-  delayedStatus: number | undefined; // 状态
+  year: string | undefined; // 年份
+  nodeStatus: number[] | undefined; // 节点状态
 };
 
 export type RoleTreeInfo = {

@@ -177,7 +177,7 @@ const tools = {
     }
     return moment(date, format);
   },
-  diffDays(startDate: string | Date, endDate: string | Date) {
+  diffDays(startDate: string | Date, endDate: string | Date): number | string {
     if (!startDate || !endDate) {
       return "";
     }
@@ -185,6 +185,12 @@ const tools = {
     const end = dayjs(this.formatDate(endDate, "YYYY-MM-DD"));
     const diffDays = end.diff(start, "day"); // 结果：5
     return diffDays;
+  },
+  addDays(date: string | Date, days: number) {
+    if (!date) {
+      return "";
+    }
+    return moment(date).add(days, "days").format("YYYY-MM-DD");
   },
 };
 

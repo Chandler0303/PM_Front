@@ -2,6 +2,7 @@ import {
   Button,
   Empty,
   Form,
+  Input,
   InputNumber,
   message,
   Segmented,
@@ -125,7 +126,7 @@ function ProcedureManagementContainer(): JSX.Element {
     if (findedProcedure) {
       findedProcedure = {
         ...findedProcedure,
-        stages: JSON.parse(findedProcedure.config).stages,
+        stages: findedProcedure.config.stages,
       };
       setProcedureInfo(findedProcedure);
     }
@@ -142,9 +143,9 @@ function ProcedureManagementContainer(): JSX.Element {
     try {
       const res: Res | undefined = await pmApi.editProcedureConfig({
         id: procedureInfo?.id,
-        config: JSON.stringify({
+        config: {
           stages: configDiff(updatedCache),
-        }),
+        },
       });
       if (res && res.success) {
         message.success("修改成功");
@@ -227,11 +228,10 @@ function ProcedureManagementContainer(): JSX.Element {
                       name={["nodes", item.name, "plannedDays"]}
                       label="制度要求时间："
                     >
-                      <InputNumber
+                      <Input
                         style={{ width: "100%" }}
                         placeholder="请输入制度要求时间"
                         disabled={!isEdit}
-                        min={0}
                       />
                     </Form.Item>
                     <Form.Item

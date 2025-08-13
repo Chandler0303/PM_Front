@@ -1,6 +1,6 @@
 export type ProcedureInfo = {
   id: number;
   name: string;
-  config: string;
+  config: any;
   stages?: any[];
 };
