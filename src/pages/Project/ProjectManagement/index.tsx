@@ -17,11 +17,9 @@ import {
   DatePicker,
   Tooltip,
   Popconfirm,
-  Typography,
   Switch,
   Cascader,
 } from "antd";
-const { Text } = Typography;
 
 import {
   DeleteOutlined,
@@ -40,9 +38,7 @@ import sysApi from "@/api/sys";
 import dayjs from "dayjs";
 import { projectStatusDict, projectTypeDict } from "@/common/dict";
 import AuthWrapper from "@/components/AuthWrapper";
-// import ProcessHandlerFactory from '@/util/processHandler'
-
-const { Option } = Select;
+import ProcessHandlerFactory from '@/util/processHandler'
 
 const formItemLayout = {
   labelCol: {
@@ -55,23 +51,8 @@ const formItemLayout = {
   },
 };
 
-const startNodeKeys = [
-  "中标公示",
-  "合同交底会",
-  "竣工验收",
-  "核实项目账务情况",
-];
-const endNodeKeys = [
-  "甲方合同签订",
-  "技经中心完成成本下达",
-  "接收结算资料",
-  "总包结算初审",
-  "总包结算",
-  "分包结算",
-  "项目账务关闭",
-];
-const startEndNodeKeys = ["物资招标", "分包招标", "项目施工"];
-// const processHandler = ProcessHandlerFactory.create('A');
+
+const processHandler = ProcessHandlerFactory.create('A');
 
 // ==================
 // 类型声明
@@ -82,12 +63,9 @@ import {
   ModalType,
   SearchInfo,
   CompanyInfo,
-  ProjectInfo,
 } from "./index.type";
 import { UserInfo } from "@/models/index.type";
 import { ColumnsType } from "antd/lib/table";
-import { ProcedureInfo } from "../ProcedureManagement/index.type";
-
 // ==================
 // CSS
 // ==================
@@ -102,7 +80,6 @@ import { RootState } from "@/store";
 function ProjectMgContainer(): JSX.Element {
   let userList: UserInfo[] = [];
 
-  const procedureInfoRef = useRef<any>();
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
@@ -155,7 +132,7 @@ function ProjectMgContainer(): JSX.Element {
       width: 150,
       render: (v: number, record: TableRecordData) => {
         let lastIndex = record.stages.findLastIndex((s) => {
-          return s.nodes.every((n: any) => isNodeComplete(n));
+          return s.nodes.every((n: any) => processHandler.isNodeComplete(n));
         });
         lastIndex =
           lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
@@ -319,35 +296,11 @@ function ProjectMgContainer(): JSX.Element {
         ...searchInfo,
       });
       if (res && res.success) {
-        const list: TableRecordData[] = [];
-        let sum = 0;
         let data = res.data;
         if (searchInfo.nodeStatus) {
           data = filterDataHandle(data);
         }
-        data.forEach((item: TableRecordData, index: number) => {
-          item.stages.sort((a, b) => a.seq - b.seq);
-          item.stages.forEach((s) => {
-            s.nodes.sort((a: any, b: any) => a.seq - b.seq);
-          });
-          item.index = index + 1;
-
-          list.push({
-            ...item,
-            newId: item.id + "-" + sum++,
-            durationLabel: "计划时间",
-          });
-          list.push({
-            ...item,
-            newId: item.id + "-" + sum++,
-            durationLabel: "实际时间",
-          });
-          list.push({
-            ...item,
-            newId: item.id + "-" + sum++,
-            durationLabel: "偏差分析",
-          });
-        });
+        const list = processHandler.tableDataSortHandler(data);
         setData(tools.processRowSpan(list, "id"));
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -368,16 +321,16 @@ function ProjectMgContainer(): JSX.Element {
       const stage = p.stages.find((s: any) => s.seq === nodesStatus[0]);
       const node = stage.nodes.find((n: any) => n.seq === nodesStatus[1]);
       let filterStatus = false;
-      if (startNodeKeys.includes(node.name)) {
+      if (processHandler.startTimeNodeKeys.includes(node.name)) {
         // 查询未完成/已完成
         if (nodesStatus[2] === 0) {
-          filterStatus = !isNodeComplete(node);
+          filterStatus = !processHandler.isNodeComplete(node);
         } else {
-          filterStatus = isNodeComplete(node);
+          filterStatus = processHandler.isNodeComplete(node);
         }
       } else {
         // 查询延误/未延误
-        if (isNodeComplete(node)) {
+        if (processHandler.isNodeComplete(node)) {
           const pStart = new Date(
             tools.formatDate(node.plannedStart, "YYYY-MM-DD")
           ).getTime();
@@ -408,11 +361,10 @@ function ProjectMgContainer(): JSX.Element {
     return new Promise(async function (resolve, reject) {
       const res = await pmApi.getProcedureList();
       if (res && res.success) {
-        const procedure = res.data[0];
-        procedure.stages = procedure.config.stages;
-        procedureInfoRef.current = procedure;
-        tableColumnsHanle();
-        setStagesOptions(stagesOptionsHandle(procedure.stages));
+        // 设置流程配置
+        processHandler.setProcedureConfig(res.data[0]);
+        tableColumnsHandle();
+        setStagesOptions(stagesOptionsHandle(processHandler.getProcedureStages()));
         resolve();
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -541,22 +493,11 @@ function ProjectMgContainer(): JSX.Element {
             ),
           };
           form.setFieldsValue(formValues);
-
-          const configStage =
-            procedureInfoRef.current && procedureInfoRef.current.stages
-              ? procedureInfoRef.current.stages.find(
-                  (s: any) => s.stageName === selectNode.data.parent.name
-                )
-              : {};
-
-          const configNode =
-            configStage && configStage.nodes
-              ? configStage.nodes.find(
-                  (n: any) => n.name === selectNode.data.name
-                )
-              : {};
+          const configNode = processHandler.getNodeConfig(
+            selectNode.data.name
+          );
           setTaskPower(
-            isTaskMg || taskPowersCheck(configNode, selectNode.data)
+            isTaskMg || processHandler.taskPowersCheck(configNode, selectNode.data, userinfo?.username)
           );
         }
       }
@@ -569,17 +510,12 @@ function ProjectMgContainer(): JSX.Element {
     const userTaskList: any[] = [];
     let filterTasks: any[] = [];
     let selectTask: any = [];
-    const configStages =
-      procedureInfoRef.current && procedureInfoRef.current.stages
-        ? procedureInfoRef.current.stages
-        : [];
-    configStages.forEach((s: any) => {
-      s.nodes.forEach((n: any) => {
+    const configNodes = processHandler.getProcedureNodes()
+    configNodes.forEach((n: any) => {
         if (n.participants.find((p: string) => p == userId)) {
           userTaskList.push(n);
         }
       });
-    });
 
     if (userTaskList.length) {
       filterTasks = allTasks.filter((t) => {
@@ -632,37 +568,9 @@ function ProjectMgContainer(): JSX.Element {
         "YYYY-MM-DD"
       ),
     });
-
-    const configStage =
-      procedureInfoRef.current && procedureInfoRef.current.stages
-        ? procedureInfoRef.current.stages.find(
-            (s: any) => s.stageName === node.parent.name
-          )
-        : {};
-    const configNode =
-      configStage && configStage.nodes
-        ? configStage.nodes.find((n: any) => n.name === node.name)
-        : {};
-
-    setTaskPower(isTaskMg || taskPowersCheck(configNode, node));
+    const configNode = processHandler.getNodeConfig(node.name);
+    setTaskPower(isTaskMg || processHandler.taskPowersCheck(configNode, node, userinfo?.username));
   };
-
-  const taskPowersCheck = (configNode: any, valNode: any): boolean => {
-    if (!userinfo) {
-      return false;
-    }
-    const participants = configNode.participants || [];
-    return (
-      participants.some((c: string) => c.toString() === userinfo.username) &&
-      !isNodeComplete(valNode)
-    );
-  };
-
-  function isNodeComplete(node: any) {
-    return (
-      node.plannedStart && node.plannedEnd && node.actualStart && node.actualEnd
-    );
-  }
 
   /** 模态框确定 **/
   const onOk = async (): Promise<void> => {
@@ -744,13 +652,13 @@ function ProjectMgContainer(): JSX.Element {
       (n) => n.label === modalForm.nodeLabel
     );
 
-    if (startNodeKeys.includes(modalForm.nodeLabel)) {
+    if (processHandler.startTimeNodeKeys.includes(modalForm.nodeLabel)) {
       values.plannedStart = values.actualEnd;
       values.plannedEnd = values.actualEnd;
       values.actualStart = values.actualEnd;
     }
 
-    if (endNodeKeys.includes(modalForm.nodeLabel) && !values.plannedEnd) {
+    if (processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) && !values.plannedEnd) {
       message.error("请先处理完上一个节点");
       return;
     }
@@ -768,20 +676,20 @@ function ProjectMgContainer(): JSX.Element {
         })
       );
       // 如果是开始节点，则后续所有节点的计划时间都要跟着变，下一个实际开始时间也要变
-      if (startNodeKeys.includes(modalForm.nodeLabel)) {
+      if (processHandler.startTimeNodeKeys.includes(modalForm.nodeLabel)) {
         let pStart = values.plannedEnd;
         let pEnd = values.plannedEnd;
         for (let i = findIndex + 1; i < nodesData?.length; i++) {
           const nextNode = nodesData[i].data;
-          if (startEndNodeKeys.includes(nextNode.name)) {
+          if (processHandler.startEndTimeNodeKeys.includes(nextNode.name)) {
             break;
           }
-          if (startNodeKeys.includes(nextNode.name)) {
+          if (processHandler.startTimeNodeKeys.includes(nextNode.name)) {
             break;
           }
 
           pEnd = tools.formatAntDate(
-            tools.addDays(pEnd, getNodeConfig(nextNode.name).plannedDays),
+            tools.addDays(pEnd, processHandler.getNodeConfig(nextNode.name).plannedDays),
             "YYYY-MM-DD"
           );
           const eidtNode: any = {
@@ -797,10 +705,10 @@ function ProjectMgContainer(): JSX.Element {
           promiseList.push(pmApi.editProjectNode(eidtNode));
           pStart = pEnd;
         }
-      } else if (endNodeKeys.includes(modalForm.nodeLabel)) {
+      } else if (processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)) {
         // 如果是结束节点，则下一个节点的实际开始时间要跟着变
         const nextNode = nodesData[findIndex + 1].data;
-        if (nodesData[findIndex + 1] && endNodeKeys.includes(nextNode.name)) {
+        if (nodesData[findIndex + 1] && processHandler.endTimeNodeKeys.includes(nextNode.name)) {
           promiseList.push(
             pmApi.editProjectNode({
               actualStart: values.actualEnd,
@@ -824,25 +732,6 @@ function ProjectMgContainer(): JSX.Element {
     }
   };
 
-  const getNodeConfig = (nodeName: string) => {
-    let node = {
-      plannedDays: 0,
-    };
-    const configStages =
-      procedureInfoRef.current && procedureInfoRef.current.stages
-        ? procedureInfoRef.current.stages
-        : [];
-
-    configStages.forEach((s: any) => {
-      s.nodes.forEach((n: any) => {
-        if (n.name === nodeName) {
-          node = n;
-        }
-      });
-    });
-    return node;
-  };
-
   // 删除某一条数据
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
@@ -860,10 +749,7 @@ function ProjectMgContainer(): JSX.Element {
   };
 
   const createStages = () => {
-    const stages =
-      procedureInfoRef.current && procedureInfoRef.current.stages
-        ? procedureInfoRef.current.stages
-        : [];
+    const stages = processHandler.getProcedureStages();
     return stages.map((stage: any) => {
       return {
         name: stage.stageName,
@@ -897,11 +783,11 @@ function ProjectMgContainer(): JSX.Element {
             value: node.seq,
             children: [
               {
-                label: startNodeKeys.includes(node.name) ? "未完成" : "超时",
+                label: processHandler.startTimeNodeKeys.includes(node.name) ? "未完成" : "超时",
                 value: 0,
               },
               {
-                label: startNodeKeys.includes(node.name) ? "已完成" : "正常",
+                label: processHandler.startTimeNodeKeys.includes(node.name) ? "已完成" : "正常",
                 value: 1,
               },
             ],
@@ -911,10 +797,10 @@ function ProjectMgContainer(): JSX.Element {
     });
   };
 
-  const tableColumnsHanle = () => {
-    const stages = procedureInfoRef.current.stages || [];
+  const tableColumnsHandle = () => {
+    const stages = processHandler.getProcedureStages();
 
-    const oneColumns = stages.map((stage: any) => {
+    const oneColumns: ColumnsType<TableRecordData> = stages.map((stage: any) => {
       const participantsList: any = [];
       stage.nodes.forEach((n: any) => {
         n.participants.forEach((p: string) => {
@@ -924,19 +810,19 @@ function ProjectMgContainer(): JSX.Element {
         });
       });
       return {
-        title: stage.stageName,
+        title: stage.stageName, // 阶段
         align: "center",
         children: [
           {
-            title: userHandle(participantsList),
+            title: userHandle(participantsList), // 负责人
             align: "center",
             children: stage.nodes.map((node: any) => {
               return {
-                title: node.name,
+                title: node.name, // 节点
                 align: "center",
                 children: [
                   {
-                    title: node.plannedDays || "--",
+                    title: node.plannedDays || "--", // 制度要求时间
                     align: "center",
                     children: initNodesData(stage, node),
                   },
@@ -947,6 +833,7 @@ function ProjectMgContainer(): JSX.Element {
         ],
       };
     });
+
     setColumns([
       ...columns.slice(0, columns.length - 1),
       ...oneColumns,
@@ -962,54 +849,10 @@ function ProjectMgContainer(): JSX.Element {
         align: "center",
         width: 100,
         onCell: (record: any) => {
-          if (record.durationLabel === "偏差分析") {
-            const currentStage = record.stages.find(
-              (s: any) => s.seq === stage.seq
-            );
-            const currentNode = currentStage.nodes.find(
-              (n: any) => n.seq === node.seq
-            );
-            const val = tools.diffDays(
-              currentNode.plannedStart,
-              currentNode.actualStart
-            );
-            return {
-              style: {
-                backgroundColor:
-                  Number(val) > 0
-                    ? Number(val) > 100
-                      ? "#ff4d4f"
-                      : "#faad14"
-                    : "#fff",
-              },
-            };
-          } else {
-            return {};
-          }
+          return processHandler.calcStartTimeCell(record, node);
         },
         render: (v: any, record: any) => {
-          const currentStage = record.stages.find(
-            (s: any) => s.seq === stage.seq
-          );
-          const currentNode = currentStage.nodes.find(
-            (n: any) => n.seq === node.seq
-          );
-          let val;
-          switch (record.durationLabel) {
-            case "计划时间":
-              val = tools.formatDate(currentNode.plannedStart, "YYYY/MM/DD");
-              break;
-            case "实际时间":
-              val = tools.formatDate(currentNode.actualStart, "YYYY/MM/DD");
-              break;
-            case "偏差分析":
-              val = tools.diffDays(
-                currentNode.plannedStart,
-                currentNode.actualStart
-              );
-              break;
-          }
-          return val;
+          return processHandler.calcStartTime(record, node);
         },
       },
       {
@@ -1019,67 +862,19 @@ function ProjectMgContainer(): JSX.Element {
         width: 100,
         align: "center",
         onCell: (record: any) => {
-          if (record.durationLabel === "偏差分析") {
-            const currentStage = record.stages.find(
-              (s: any) => s.seq === stage.seq
-            );
-            const currentNode = currentStage.nodes.find(
-              (n: any) => n.seq === node.seq
-            );
-            const val = tools.diffDays(
-              currentNode.plannedEnd,
-              currentNode.actualEnd
-            );
-            return {
-              style: {
-                backgroundColor:
-                  Number(val) > 0
-                    ? Number(val) > 100
-                      ? "#ff4d4f"
-                      : "#faad14"
-                    : "#fff",
-              },
-            };
-          } else {
-            return {};
-          }
+          return processHandler.calcEndTimeCell(record, node);
         },
         render: (v: any, record: any) => {
-          const currentStage = record.stages.find(
-            (s: any) => s.seq === stage.seq
-          );
-          const currentNode = currentStage.nodes.find(
-            (n: any) => n.seq === node.seq
-          );
-          let val;
-          switch (record.durationLabel) {
-            case "计划时间":
-              val = tools.formatDate(currentNode.plannedEnd, "YYYY/MM/DD");
-              break;
-            case "实际时间":
-              val = tools.formatDate(currentNode.actualEnd, "YYYY/MM/DD");
-              break;
-            case "偏差分析":
-              val = tools.diffDays(
-                currentNode.plannedEnd,
-                currentNode.actualEnd
-              );
-              break;
-          }
-          return val;
+          return processHandler.calcEndTime(record, node);
         },
       },
     ];
-
-    const type = node.plannedDays
-      ? node.plannedDays.toString()
-      : node.plannedDays;
-
-    if (startNodeKeys.find((k) => k === node.name)) {
+    // 如果是开始时间节点，则不显示实际开始时间
+    if (processHandler.startTimeNodeKeys.find((k) => k === node.name)) {
       children = children.filter((c) => c.title === "开始时间");
       children[0].title = "--";
     }
-    if (endNodeKeys.find((k) => k === node.name)) {
+    if (processHandler.endTimeNodeKeys.find((k) => k === node.name)) {
       children = children.filter((c) => c.title === "结束时间");
       children[0].title = "--";
     }
@@ -1092,127 +887,10 @@ function ProjectMgContainer(): JSX.Element {
         width: 100,
         align: "center",
         onCell: (record: any) => {
-          if (record.durationLabel === "偏差分析" && !record.shelve) {
-            const currentStage = record.stages.find(
-              (s: any) => s.seq === stage.seq
-            );
-            const currentNode = currentStage.nodes.find(
-              (n: any) => n.seq === node.seq
-            );
-            const start = Math.abs(
-              Number(
-                tools.diffDays(currentNode.plannedEnd, currentNode.plannedStart)
-              )
-            );
-            let end = 0;
-
-            if (record.status === 1) {
-              end = Math.abs(
-                Number(tools.diffDays(new Date(), currentNode.plannedStart))
-              );
-              return {
-                style: {
-                  backgroundColor:
-                    end > 0 ? (end > 100 ? "#ff4d4f" : "#faad14") : "#fff",
-                },
-              };
-            } else if (record.status === 2) {
-              return {};
-            } else {
-              Math.abs(
-                Number(
-                  tools.diffDays(currentNode.actualEnd, currentNode.actualStart)
-                )
-              );
-              return {
-                style: {
-                  backgroundColor:
-                    end - start > 0
-                      ? end - start > 100
-                        ? "#ff4d4f"
-                        : "#faad14"
-                      : "#fff",
-                },
-              };
-            }
-          } else {
-            return {};
-          }
+          return processHandler.calcProjectPlanDurationCell(record, node);
         },
         render: (v: any, record: any) => {
-          const currentStage = record.stages.find(
-            (s: any) => s.seq === stage.seq
-          );
-          const currentNode = currentStage.nodes.find(
-            (n: any) => n.seq === node.seq
-          );
-          let val;
-          switch (record.durationLabel) {
-            case "计划时间":
-              val = Math.abs(
-                Number(
-                  tools.diffDays(
-                    currentNode.plannedEnd,
-                    currentNode.plannedStart
-                  )
-                )
-              );
-              break;
-            case "实际时间":
-              val =
-                currentNode.actualEnd && currentNode.actualStart
-                  ? Math.abs(
-                      Number(
-                        tools.diffDays(
-                          currentNode.actualEnd,
-                          currentNode.actualStart
-                        )
-                      )
-                    )
-                  : "";
-              break;
-            case "偏差分析":
-              if (record.shelve) {
-                val = "";
-              } else {
-                const start = Math.abs(
-                  Number(
-                    tools.diffDays(
-                      currentNode.plannedEnd,
-                      currentNode.plannedStart
-                    )
-                  )
-                );
-                let end = 0;
-                if (record.status === 1) {
-                  end = Math.abs(
-                    Number(tools.diffDays(new Date(), currentNode.plannedStart))
-                  );
-                  val = end;
-                } else if (record.status === 2) {
-                  val = -(
-                    Math.abs(Number(start)) -
-                    Math.abs(
-                      Number(
-                        tools.diffDays(new Date(), currentNode.actualStart)
-                      )
-                    )
-                  );
-                } else {
-                  end = Math.abs(
-                    Number(
-                      tools.diffDays(
-                        currentNode.actualEnd,
-                        currentNode.actualStart
-                      )
-                    )
-                  );
-                  val = end - start;
-                }
-              }
-              break;
-          }
-          return val;
+          return processHandler.calcProjectPlanDuration(record, node);
         },
       });
     }
@@ -1220,33 +898,15 @@ function ProjectMgContainer(): JSX.Element {
   };
 
   const userHandle = (users: string[]) => {
-    const filterUser: (UserInfo | undefined)[] = users
-      .map((name: string) => {
-        const user: UserInfo | undefined = userList.find(
-          (u: UserInfo) => u.username === name
-        );
-        return user ? user : undefined;
-      })
-      .filter((u) => u);
-    if (!filterUser.length) {
-      return "--";
-    }
-    const userObj: any = {};
-    filterUser.forEach((u: any) => {
-      const orgName = u.org.name as string;
-      if (userObj[orgName]) {
-        userObj[orgName].push(u.name);
-      } else {
-        userObj[orgName] = [u.name];
-      }
-    });
+    const userObj = processHandler.userDataHandle(users, userList)
+    const keys = Object.keys(userObj)
     return (
       <>
-        {Object.keys(userObj).map((key) => (
+        {keys.length ? keys.map((key) => (
           <div key={key}>
             {key}（{userObj[key].join("、")}）
           </div>
-        ))}
+        )) : '--'}
       </>
     );
   };
@@ -1350,7 +1010,7 @@ function ProjectMgContainer(): JSX.Element {
           ? [{ required: true, message: `请选择计划开始时间` }]
           : [],
       disabled: () => !taskPower,
-      show: () => startEndNodeKeys.includes(modalForm.nodeLabel),
+      show: () => processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "计划结束时间",
@@ -1362,11 +1022,11 @@ function ProjectMgContainer(): JSX.Element {
           ? [{ required: true, message: `请选择计划结束时间` }]
           : [],
       disabled: () => {
-        return endNodeKeys.includes(modalForm.nodeLabel) ? true : !taskPower;
+        return processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) ? true : !taskPower;
       },
       show: () =>
-        endNodeKeys.includes(modalForm.nodeLabel) ||
-        startEndNodeKeys.includes(modalForm.nodeLabel),
+        processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) ||
+        processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "实际开始时间",
@@ -1385,14 +1045,14 @@ function ProjectMgContainer(): JSX.Element {
         return [];
       },
       disabled: () => !taskPower,
-      show: () => startEndNodeKeys.includes(modalForm.nodeLabel),
+      show: () => processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "实际结束时间",
       name: "actualEnd",
       type: "date",
       required: () => {
-        if (!startEndNodeKeys.includes(modalForm.nodeLabel)) {
+        if (!processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return true;
         } else {
           if (modalForm.status === 3 && modalForm.nodeLabel === "项目施工") {
@@ -1402,7 +1062,7 @@ function ProjectMgContainer(): JSX.Element {
         }
       },
       rules: () => {
-        if (!startEndNodeKeys.includes(modalForm.nodeLabel)) {
+        if (!processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return [{ required: true, message: `请选择实际结束时间` }];
         } else {
           if (modalForm.status === 3 && modalForm.nodeLabel === "项目施工") {
