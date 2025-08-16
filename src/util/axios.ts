@@ -1,5 +1,6 @@
 /** 对axios做一些配置 **/
 
+import { message } from "antd";
 import { baseUrl } from "../config";
 import axios from "axios";
 
@@ -35,17 +36,16 @@ axios.defaults.baseURL = baseUrl;
 axios.defaults.withCredentials = false;
 // 对返回的结果做处理
 axios.interceptors.response.use((response) => {
-  // const code = response?.data?.code ?? 200;
+  const code = response?.data?.code ?? 200;
   // 没有权限，登录超时，登出，跳转登录
-  // if (code === 3) {
-  //   message.error("登录超时，请重新登录");
-  //   sessionStorage.removeItem("userinfo");
-  //   setTimeout(() => {
-  //     window.location.href = "/";
-  //   }, 1500);
-  // } else {
-  //   return response.data;
-  // }
+  if (code === 401) {
+    sessionStorage.removeItem("userinfo");
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
+  } else {
+    return response.data;
+  }
   return response.data;
 });
 

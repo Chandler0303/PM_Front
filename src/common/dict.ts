@@ -13,6 +13,17 @@ export const projectStatusDict = [
   },
 ];
 
+export const nodeStatusDict = [
+  {
+    label: "未完成",
+    value: 0,
+  },
+  {
+    label: "已完成",
+    value: 1,
+  }
+];
+
 export const projectTypeDict = [
   {
     label: "资本类",

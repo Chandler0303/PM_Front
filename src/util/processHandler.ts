@@ -50,7 +50,7 @@ class BaseProcessHandler {
     return this.procedureStages;
   }
   getProcedureNodes() {
-    return this.procedureNodes
+    return this.procedureNodes;
   }
   getNodeConfig(name: string) {
     let node = {
@@ -70,6 +70,7 @@ class BaseProcessHandler {
   getProjectNodeConfig(stages: any[], name: string) {
     let node = {
       name: "",
+      status: 0,
       plannedStart: "",
       plannedEnd: "",
       actualStart: "",
@@ -105,91 +106,219 @@ class BaseProcessHandler {
 
   userDataHandle(users: string[], userList: UserInfo[]) {
     const filterUser: (UserInfo | undefined)[] = users
-        .map((name: string) => {
+      .map((name: string) => {
         const user: UserInfo | undefined = userList.find(
-            (u: UserInfo) => u.username === name
+          (u: UserInfo) => u.username === name
         );
         return user ? user : undefined;
-        })
-        .filter((u) => u);
+      })
+      .filter((u) => u);
     const userObj: any = {};
     filterUser.forEach((u: any) => {
-        const orgName = u.org.name as string;
-        if (userObj[orgName]) {
-            userObj[orgName].push(u.name);
-        } else {
-            userObj[orgName] = [u.name];
-        }
+      const orgName = u.org.name as string;
+      if (userObj[orgName]) {
+        userObj[orgName].push(u.name);
+      } else {
+        userObj[orgName] = [u.name];
+      }
     });
-    return userObj
+    return userObj;
   }
 }
 
 class ProcessAHandler extends BaseProcessHandler {
   startTimeNodeKeys: string[] = [];
   endTimeNodeKeys: string[] = [];
-  startEndTimeNodeKeys: string[] = [];
+  customTimeNodeKeys: string[] = [];
+  statusNodeKeys: string[] = [];
   constructor() {
     super();
-    this.initConfig();
   }
   // 初始化配置
-  initConfig() {
-    this.startTimeNodeKeys = [
-      "中标公示",
-      "合同交底会",
-      "竣工验收",
-      "核实项目账务情况",
-    ];
-    this.endTimeNodeKeys = [
-      "甲方合同签订",
-      "技经中心完成成本下达",
-      "接收结算资料",
-      "总包结算初审",
-      "总包结算",
-      "分包结算",
-      "项目账务关闭",
-    ];
-    this.startEndTimeNodeKeys = ["物资招标", "分包招标", "项目施工"];
+  setNodeType() {
+    this.startTimeNodeKeys = this.procedureNodes
+      .filter((n) => n.plannedDays.toString().indexOf("开始") !== -1)
+      .map((n) => n.name);
+    this.customTimeNodeKeys = ["开工日期", "竣工日期", "项目工期"];
+    this.statusNodeKeys = ["分包招标是否完成", "物资招标是否完成"];
+    this.endTimeNodeKeys = this.procedureNodes
+      .filter(
+        (n) =>
+          n.plannedDays.toString().indexOf("开始") === -1 &&
+          !this.customTimeNodeKeys.find((item) => item === n.name) &&
+          !this.statusNodeKeys.find((item) => item === n.name)
+      )
+      .map((n) => n.name);
   }
 
-  calcStartTime(record: any, node: any) {
+  calcVal(record: any, node: any) {
+    if (
+      this.startTimeNodeKeys.find((k) => k === node.name) ||
+      this.endTimeNodeKeys.find((k) => k === node.name)
+    ) {
+      return this.calcEndTime(record, node);
+    } else if (this.customTimeNodeKeys.find((k) => k === node.name)) {
+      return this.calcCustomTime(record, node);
+    }else if (this.statusNodeKeys.find((k) => k === node.name)) {
+        return this.calcStatusData(record, node)
+    }
+  }
+
+  calcEndTime(record: any, node: any) {
     const currentNode = this.getProjectNodeConfig(record.stages, node.name);
     let val;
     switch (record.durationLabel) {
       case "计划时间":
-        val = tools.formatDate(currentNode.plannedStart, "YYYY/MM/DD");
+        val = tools.formatDate(currentNode.plannedEnd, "YYYY/MM/DD");
         break;
       case "实际时间":
-        val = tools.formatDate(currentNode.actualStart, "YYYY/MM/DD");
+        val = tools.formatDate(currentNode.actualEnd, "YYYY/MM/DD");
         break;
       case "偏差分析":
-        if (
-          currentNode.name === "项目施工" &&
-          record.status === 1 &&
-          !record.shelve
-        ) {
-          val = tools.diffDays(
-            currentNode.plannedStart,
-            currentNode.actualStart || new Date()
-          );
-        } else {
-          val = tools.diffDays(
-            currentNode.plannedStart,
-            currentNode.actualStart
-          );
-        }
+        val = tools.diffDays(currentNode.plannedEnd, currentNode.actualEnd);
         break;
     }
     return val;
   }
-  calcStartTimeCell(record: any, node: any) {
-    if (record.durationLabel === "偏差分析") {
-      const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+  calcStatusData(record: any, node: any) {
+    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+    let val;
+    if (currentNode.status === 1) {
+        val = '已完成'
+    } else {
+        const connectNode = this.getProjectNodeConfig(record.stages, "甲方合同签订时间");
+        if (connectNode.actualEnd) {
+            val = '距离' + tools.diffDays(connectNode.actualEnd, new Date()) + '天没有进行招采';
+        } else {
+            val = ''
+        }
+        
+    }
+    return val;
+  }
+  calcCustomTime(record: any, node: any) {
+    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+    let val;
 
+    if (node.name === "开工日期") {
+      switch (record.durationLabel) {
+        case "计划时间":
+          val = tools.formatDate(currentNode.plannedStart, "YYYY/MM/DD");
+          break;
+        case "实际时间":
+          val = tools.formatDate(currentNode.actualStart, "YYYY/MM/DD");
+          break;
+        case "偏差分析":
+          if (record.status === 1 && !record.shelve) {
+            val = tools.diffDays(
+              currentNode.plannedStart,
+              currentNode.actualStart || new Date()
+            );
+          } else {
+            val = tools.diffDays(currentNode.plannedStart, currentNode.actualStart);
+          }
+          break;
+      }
+    } else if (node.name === "竣工日期") {
+      val = this.calcEndTime(record, node);
+    } else {
+      switch (record.durationLabel) {
+        case "计划时间":
+          val =
+            currentNode.plannedEnd && currentNode.plannedStart
+              ? Math.abs(
+                  Number(
+                    tools.diffDays(
+                      currentNode.plannedEnd,
+                      currentNode.plannedStart
+                    )
+                  )
+                )
+              : "";
+          break;
+        case "实际时间":
+          if (record.shelve) {
+            val = "";
+          } else {
+            if (record.status === 2) {
+              val =
+                Math.abs(
+                  Number(tools.diffDays(new Date(), currentNode.actualStart))
+                ) + 1;
+            } else {
+              val =
+                currentNode.actualEnd && currentNode.actualStart
+                  ? Math.abs(
+                      Number(
+                        tools.diffDays(
+                          currentNode.actualEnd,
+                          currentNode.actualStart
+                        )
+                      )
+                    )
+                  : "";
+            }
+          }
+          break;
+        case "偏差分析":
+          if (record.shelve) {
+            val = "";
+          } else {
+            const start = Math.abs(
+              Number(
+                tools.diffDays(currentNode.plannedEnd, currentNode.plannedStart)
+              )
+            );
+            let end = 0;
+            if (record.status === 1) {
+              // end = Math.abs(
+              //   Number(tools.diffDays(new Date(), currentNode.plannedStart))
+              // );
+              // val = end;
+            } else if (record.status === 2) {
+              val = -(
+                start -
+                (Math.abs(
+                  Number(tools.diffDays(new Date(), currentNode.actualStart))
+                ) +
+                  1)
+              );
+            } else {
+              end = Math.abs(
+                Number(
+                  tools.diffDays(currentNode.actualEnd, currentNode.actualStart)
+                )
+              );
+              val = end - start;
+            }
+          }
+          break;
+      }
+    }
+
+    return val;
+  }
+
+  calcCell(record: any, node: any) {
+    if (
+      this.startTimeNodeKeys.find((k) => k === node.name) ||
+      this.endTimeNodeKeys.find((k) => k === node.name)
+    ) {
+      return this.calcEndTimeCell(record, node);
+    } else if (this.customTimeNodeKeys.find((k) => k === node.name)) {
+      return this.calcCustomTimeCell(record, node);
+    }else if (this.statusNodeKeys.find((k) => k === node.name)) {
+        return this.calcStatusDataCell(record, node)
+    }
+  }
+  calcCustomTimeCell(record: any, node: any) {
+    if (record.durationLabel !== "偏差分析") {
+        return {}
+    }
+    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+    if (node.name === "开工日期") {
       let val;
       if (
-        currentNode.name === "项目施工" &&
         record.status === 1 &&
         !record.shelve
       ) {
@@ -210,29 +339,17 @@ class ProcessAHandler extends BaseProcessHandler {
               : this.normalColor,
         },
       };
+    } else if (node.name === "竣工日期") {
+      return this.calcEndTimeCell(record, node)
     } else {
-      return {};
+      return this.calcProjectPlanDurationCell(record, node)
     }
-  }
-  calcEndTime(record: any, node: any) {
-    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
-    let val;
-    switch (record.durationLabel) {
-      case "计划时间":
-        val = tools.formatDate(currentNode.plannedEnd, "YYYY/MM/DD");
-        break;
-      case "实际时间":
-        val = tools.formatDate(currentNode.actualEnd, "YYYY/MM/DD");
-        break;
-      case "偏差分析":
-        val = tools.diffDays(currentNode.plannedEnd, currentNode.actualEnd);
-        break;
-    }
-    return val;
   }
   calcEndTimeCell(record: any, node: any) {
-    if (record.durationLabel === "偏差分析") {
-      const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+    if (record.durationLabel !== "偏差分析") {
+        return {}
+    }
+     const currentNode = this.getProjectNodeConfig(record.stages, node.name);
 
       const val = tools.diffDays(currentNode.plannedEnd, currentNode.actualEnd);
       return {
@@ -245,124 +362,44 @@ class ProcessAHandler extends BaseProcessHandler {
               : this.normalColor,
         },
       };
-    } else {
-      return {};
-    }
-  }
-  calcProjectPlanDuration(record: any, node: any) {
-    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
-    let val;
-    switch (record.durationLabel) {
-      case "计划时间":
-        val =
-          currentNode.plannedEnd && currentNode.plannedStart
-            ? Math.abs(
-                Number(
-                  tools.diffDays(
-                    currentNode.plannedEnd,
-                    currentNode.plannedStart
-                  )
-                )
-              )
-            : "";
-        break;
-      case "实际时间":
-        if (record.shelve) {
-          val = "";
-        } else {
-          if (record.status === 2) {
-            val =
-              Math.abs(
-                Number(tools.diffDays(new Date(), currentNode.actualStart))
-              ) + 1;
-          } else {
-            val =
-              currentNode.actualEnd && currentNode.actualStart
-                ? Math.abs(
-                    Number(
-                      tools.diffDays(
-                        currentNode.actualEnd,
-                        currentNode.actualStart
-                      )
-                    )
-                  )
-                : "";
-          }
-        }
-        break;
-      case "偏差分析":
-        if (record.shelve) {
-          val = "";
-        } else {
-          const start = Math.abs(
-            Number(
-              tools.diffDays(currentNode.plannedEnd, currentNode.plannedStart)
-            )
-          );
-          let end = 0;
-          if (record.status === 1) {
-            // end = Math.abs(
-            //   Number(tools.diffDays(new Date(), currentNode.plannedStart))
-            // );
-            // val = end;
-          } else if (record.status === 2) {
-            val = -(
-              start -
-              (Math.abs(
-                Number(tools.diffDays(new Date(), currentNode.actualStart))
-              ) +
-                1)
-            );
-          } else {
-            end = Math.abs(
-              Number(
-                tools.diffDays(currentNode.actualEnd, currentNode.actualStart)
-              )
-            );
-            val = end - start;
-          }
-        }
-        break;
-    }
-    return val;
   }
   calcProjectPlanDurationCell(record: any, node: any) {
     if (record.durationLabel === "偏差分析" && !record.shelve) {
-        if (record.status === 1) {
-            return {};
-        }
+      if (record.status === 1) {
+        return {};
+      }
 
-        const currentNode = this.getProjectNodeConfig(record.stages, node.name);
-        const start = Math.abs(
-            Number(tools.diffDays(currentNode.plannedEnd, currentNode.plannedStart))
+      const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+      const start = Math.abs(
+        Number(tools.diffDays(currentNode.plannedEnd, currentNode.plannedStart))
+      );
+      let end = 0;
+      if (record.status === 2) {
+        end =
+          Math.abs(
+            Number(tools.diffDays(new Date(), currentNode.actualStart))
+          ) + 1;
+      } else {
+        end = Math.abs(
+          Number(tools.diffDays(currentNode.actualEnd, currentNode.actualStart))
         );
-        let end = 0;
-        if (record.status === 2) {
-            end =
-            Math.abs(
-                Number(tools.diffDays(new Date(), currentNode.actualStart))
-            ) + 1;
-        } else {
-            end = Math.abs(
-            Number(
-                tools.diffDays(currentNode.actualEnd, currentNode.actualStart)
-            )
-            );
-        }
-        return {
-            style: {
-            backgroundColor:
-                end - start > 0
-                ? end - start > 100
-                    ? this.errorColor
-                    : this.warningColor
-                : this.normalColor,
-            },
-        };
-      
+      }
+      return {
+        style: {
+          backgroundColor:
+            end - start > 0
+              ? end - start > 100
+                ? this.errorColor
+                : this.warningColor
+              : this.normalColor,
+        },
+      };
     } else {
       return {};
     }
+  }
+  calcStatusDataCell(record: any, node: any) {
+    return {}
   }
 
   isNodeComplete(node: any) {
@@ -370,7 +407,11 @@ class ProcessAHandler extends BaseProcessHandler {
       node.plannedStart && node.plannedEnd && node.actualStart && node.actualEnd
     );
   }
-  taskPowersCheck(configNode: any, valNode: any, username:string | undefined): boolean{
+  taskPowersCheck(
+    configNode: any,
+    valNode: any,
+    username: string | undefined
+  ): boolean {
     if (!username) {
       return false;
     }
@@ -379,7 +420,7 @@ class ProcessAHandler extends BaseProcessHandler {
       participants.some((c: string) => c.toString() === username) &&
       !this.isNodeComplete(valNode)
     );
-  };
+  }
 }
 
 // 2. 工厂类，根据流程类型创建对应实例

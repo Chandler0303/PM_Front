@@ -36,7 +36,7 @@ import tools from "@/util/tools"; // 工具函数
 import pmApi from "@/api/pm";
 import sysApi from "@/api/sys";
 import dayjs from "dayjs";
-import { projectStatusDict, projectTypeDict } from "@/common/dict";
+import { nodeStatusDict, projectStatusDict, projectTypeDict } from "@/common/dict";
 import AuthWrapper from "@/components/AuthWrapper";
 import ProcessHandlerFactory from '@/util/processHandler'
 
@@ -73,6 +73,7 @@ import "./index.less";
 import { useAuthPowers } from "@/hooks/useAuthPowers";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import TextArea from "antd/lib/input/TextArea";
 
 // ==================
 // 本组件
@@ -268,7 +269,7 @@ function ProjectMgContainer(): JSX.Element {
   });
 
   const [modalForm, setModalForm] = useSetState({
-    status: 1,
+    projectStatus: 1,
     shelve: false,
     nodeLabel: "",
   });
@@ -328,6 +329,13 @@ function ProjectMgContainer(): JSX.Element {
         } else {
           filterStatus = processHandler.isNodeComplete(node);
         }
+      } else if (processHandler.statusNodeKeys.includes(node.name)) {
+        // 查询未完成/已完成
+        if (nodesStatus[2] === 0) {
+          filterStatus = node.status === 0;
+        } else {
+          filterStatus = node.status === 1;
+        }
       } else {
         // 查询延误/未延误
         if (processHandler.isNodeComplete(node)) {
@@ -344,10 +352,24 @@ function ProjectMgContainer(): JSX.Element {
             tools.formatDate(node.actualEnd, "YYYY-MM-DD")
           ).getTime();
 
-          if (nodesStatus[2] === 0) {
-            filterStatus = aEnd - aStart > pEnd - pStart;
-          } else {
-            filterStatus = !(aEnd - aStart > pEnd - pStart);
+          if (node.name === '开工日期') {
+            if (nodesStatus[2] === 0) {
+              filterStatus = aStart > pStart;
+            } else {
+              filterStatus = !(aStart > pStart);
+            }
+          }  else if(node.name === '竣工日期') {
+            if (nodesStatus[2] === 0) {
+              filterStatus = aEnd > pEnd;
+            } else {
+              filterStatus = !(aEnd > pEnd);
+            }
+          }else {
+            if (nodesStatus[2] === 0) {
+              filterStatus = aEnd - aStart > pEnd - pStart;
+            } else {
+              filterStatus = !(aEnd - aStart > pEnd - pStart);
+            }
           }
         }
       }
@@ -363,6 +385,7 @@ function ProjectMgContainer(): JSX.Element {
       if (res && res.success) {
         // 设置流程配置
         processHandler.setProcedureConfig(res.data[0]);
+        processHandler.setNodeType()
         tableColumnsHandle();
         setStagesOptions(stagesOptionsHandle(processHandler.getProcedureStages()));
         resolve();
@@ -469,12 +492,14 @@ function ProjectMgContainer(): JSX.Element {
             ...modalForm,
             shelve: Boolean(data.shelve),
             nodeLabel: selectNode.label,
-            status: data.status,
+            projectStatus: data.status,
           });
           const formValues = {
-            status: data.status,
+            projectStatus: data.status,
+            status: selectNode.data.status,
             shelve: Boolean(modal.nowData?.shelve),
             task: selectNode.value,
+            remark: selectNode.remark,
             plannedStart: tools.formatAntDate(
               tools.formatDate(selectNode.data.plannedStart),
               "YYYY-MM-DD"
@@ -526,10 +551,10 @@ function ProjectMgContainer(): JSX.Element {
       });
     }
 
-    filterTasks = filterTasks.length ? filterTasks : allTasks;
+    filterTasks = filterTasks.length ? filterTasks : allTasks
 
     let selectTaskIndex =
-      filterTasks.findLastIndex((ft) => ft.data.actualEnd) + 1;
+      filterTasks.findLastIndex((ft) => ft.data.actualEnd || ft.data.status) + 1;
     if (selectTaskIndex > filterTasks.length - 1) {
       selectTaskIndex = filterTasks.length - 1;
     }
@@ -544,11 +569,13 @@ function ProjectMgContainer(): JSX.Element {
       ...modalForm,
       shelve: Boolean(modal.nowData?.shelve),
       nodeLabel: findNode.label,
-      status: modal.nowData?.status,
+      projectStatus: modal.nowData?.status,
     });
     form.setFieldsValue({
       task: val,
-      status: modal.nowData?.status,
+      projectStatus: modal.nowData?.status,
+      status: node.status,
+      remark: node.remark,
       shelve: Boolean(modal.nowData?.shelve),
       plannedStart: tools.formatAntDate(
         tools.formatDate(node.plannedStart),
@@ -592,11 +619,11 @@ function ProjectMgContainer(): JSX.Element {
           id: modal.nowData?.id,
         });
       } else {
-        if (modalForm.nodeLabel === "项目施工") {
+        if (processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           editProject({
             ...modal.nowData,
             shelve: Number(modalForm.shelve),
-            status: modalForm.status,
+            status: modalForm.projectStatus,
           });
         }
         editHandleProcedure(values);
@@ -662,29 +689,31 @@ function ProjectMgContainer(): JSX.Element {
       message.error("请先处理完上一个节点");
       return;
     }
-
     setModal({
       modalLoading: true,
     });
     try {
       const promiseList = [];
-      promiseList.push(
-        pmApi.editProjectNode({
-          ...values,
-          id: values.task,
-          task: undefined,
-        })
-      );
       // 如果是开始节点，则后续所有节点的计划时间都要跟着变，下一个实际开始时间也要变
       if (processHandler.startTimeNodeKeys.includes(modalForm.nodeLabel)) {
+        promiseList.push(
+          pmApi.editProjectNode({
+            ...values,
+            id: values.task,
+            task: undefined,
+          })
+        );
         let pStart = values.plannedEnd;
         let pEnd = values.plannedEnd;
         for (let i = findIndex + 1; i < nodesData?.length; i++) {
           const nextNode = nodesData[i].data;
-          if (processHandler.startEndTimeNodeKeys.includes(nextNode.name)) {
+          if (processHandler.customTimeNodeKeys.includes(nextNode.name)) {
             break;
           }
           if (processHandler.startTimeNodeKeys.includes(nextNode.name)) {
+            break;
+          }
+          if (processHandler.statusNodeKeys.includes(nextNode.name)) {
             break;
           }
 
@@ -706,16 +735,68 @@ function ProjectMgContainer(): JSX.Element {
           pStart = pEnd;
         }
       } else if (processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)) {
+        promiseList.push(
+          pmApi.editProjectNode({
+            ...values,
+            id: values.task,
+            task: undefined,
+          })
+        );
         // 如果是结束节点，则下一个节点的实际开始时间要跟着变
-        const nextNode = nodesData[findIndex + 1].data;
-        if (nodesData[findIndex + 1] && processHandler.endTimeNodeKeys.includes(nextNode.name)) {
+        const nextNode = nodesData[findIndex + 1];
+        if (nextNode && processHandler.endTimeNodeKeys.includes(nextNode.data.name)) {
           promiseList.push(
             pmApi.editProjectNode({
               actualStart: values.actualEnd,
-              id: nextNode.id,
+              id: nextNode.data.id,
             })
           );
         }
+      } else if (processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
+        nodesData.forEach(n => {
+          if (processHandler.customTimeNodeKeys.includes(n.label)) {
+            if (n.label === '开工日期') {
+              promiseList.push(pmApi.editProjectNode({
+                ...values,
+                id: n.value,
+                plannedStart: values.plannedStart || undefined,
+                plannedEnd: values.plannedEnd || undefined,
+                actualStart: values.actualStart || undefined,
+                actualEnd: values.actualEnd || undefined,
+                task: undefined
+              }))
+            } else if(n.label === '竣工日期') {
+              promiseList.push(pmApi.editProjectNode({
+                ...values,
+                id: n.value,
+                plannedStart: values.plannedStart || undefined,
+                plannedEnd: values.plannedEnd || undefined,
+                actualStart: values.actualStart || undefined,
+                actualEnd: values.actualEnd || undefined,
+                task: undefined
+              }))
+            } else {
+              promiseList.push(pmApi.editProjectNode({
+                ...values,
+                id: n.value,
+                plannedStart: values.plannedStart || undefined,
+                plannedEnd: values.plannedEnd || undefined,
+                actualStart: values.actualStart || undefined,
+                actualEnd: values.actualEnd || undefined,
+                task: undefined
+              }))
+            }
+            
+          }
+        })
+      } else {
+        promiseList.push(
+          pmApi.editProjectNode({
+            ...values,
+            id: values.task,
+            task: undefined,
+          })
+        );
       }
       const res: any[] = await Promise.all(promiseList);
       if (res[0] && res[0].success) {
@@ -758,6 +839,8 @@ function ProjectMgContainer(): JSX.Element {
           return {
             name: node.name,
             seq: node.seq,
+            status: 0,
+            type: 0,
             principal: "",
           };
         }),
@@ -783,11 +866,11 @@ function ProjectMgContainer(): JSX.Element {
             value: node.seq,
             children: [
               {
-                label: processHandler.startTimeNodeKeys.includes(node.name) ? "未完成" : "超时",
+                label: processHandler.startTimeNodeKeys.includes(node.name) || processHandler.statusNodeKeys.includes(node.name) ? "未完成" : "超时",
                 value: 0,
               },
               {
-                label: processHandler.startTimeNodeKeys.includes(node.name) ? "已完成" : "正常",
+                label: processHandler.startTimeNodeKeys.includes(node.name) || processHandler.statusNodeKeys.includes(node.name) ? "已完成" : "正常",
                 value: 1,
               },
             ],
@@ -820,13 +903,19 @@ function ProjectMgContainer(): JSX.Element {
               return {
                 title: node.name, // 节点
                 align: "center",
-                children: [
-                  {
-                    title: node.plannedDays || "--", // 制度要求时间
-                    align: "center",
-                    children: initNodesData(stage, node),
+                children: [{
+                  title: node.plannedDays || '--',
+                  key: stage.seq + "-" + node.seq + "-" + "start",
+                  dataIndex: stage.seq + "-" + node.seq + "-" + "tart",
+                  align: "center",
+                  width: 100,
+                  onCell: (record: any) => {
+                    return processHandler.calcCell(record, node);
                   },
-                ],
+                  render: (v: any, record: any) => {
+                    return processHandler.calcVal(record, node);
+                  },
+                }]
               };
             }),
           },
@@ -839,62 +928,6 @@ function ProjectMgContainer(): JSX.Element {
       ...oneColumns,
       columns[columns.length - 1],
     ]);
-  };
-  const initNodesData = (stage: any, node: any) => {
-    let children: ColumnsType = [
-      {
-        title: "开始时间",
-        key: stage.seq + "-" + node.seq + "-" + "start",
-        dataIndex: stage.seq + "-" + node.seq + "-" + "tart",
-        align: "center",
-        width: 100,
-        onCell: (record: any) => {
-          return processHandler.calcStartTimeCell(record, node);
-        },
-        render: (v: any, record: any) => {
-          return processHandler.calcStartTime(record, node);
-        },
-      },
-      {
-        title: "结束时间",
-        key: stage.seq + "-" + node.seq + "-" + "end",
-        dataIndex: stage.seq + "-" + node.seq + "-" + "end",
-        width: 100,
-        align: "center",
-        onCell: (record: any) => {
-          return processHandler.calcEndTimeCell(record, node);
-        },
-        render: (v: any, record: any) => {
-          return processHandler.calcEndTime(record, node);
-        },
-      },
-    ];
-    // 如果是开始时间节点，则不显示实际开始时间
-    if (processHandler.startTimeNodeKeys.find((k) => k === node.name)) {
-      children = children.filter((c) => c.title === "开始时间");
-      children[0].title = "--";
-    }
-    if (processHandler.endTimeNodeKeys.find((k) => k === node.name)) {
-      children = children.filter((c) => c.title === "结束时间");
-      children[0].title = "--";
-    }
-
-    if (node.name === "项目施工") {
-      children.push({
-        title: "项目工期",
-        key: stage.seq + "-" + node.seq + "-" + "days",
-        dataIndex: stage.seq + "-" + node.seq + "-" + "days",
-        width: 100,
-        align: "center",
-        onCell: (record: any) => {
-          return processHandler.calcProjectPlanDurationCell(record, node);
-        },
-        render: (v: any, record: any) => {
-          return processHandler.calcProjectPlanDuration(record, node);
-        },
-      });
-    }
-    return children;
   };
 
   const userHandle = (users: string[]) => {
@@ -955,7 +988,14 @@ function ProjectMgContainer(): JSX.Element {
               defaultChecked={modalForm.shelve}
               onChange={field.onChange}
             />
-          ) : (
+          ) : field.type === "textArea" ? (
+            <TextArea
+              showCount
+              maxLength={100}
+              placeholder={`请输入${field.label}`}
+              style={{ height: 120, resize: 'none' }}
+            />
+          ): (
             <Input placeholder={`请输入${field.label}`} />
           )}
         </Form.Item>
@@ -973,17 +1013,17 @@ function ProjectMgContainer(): JSX.Element {
     },
     {
       label: "工程状态",
-      name: "status",
+      name: "projectStatus",
       type: "select",
       required: true,
       options: projectStatusDict,
       placeholder: "请选择状态",
       rules: [{ required: true, message: "请选择状态" }],
-      show: () => modalForm.nodeLabel === "项目施工",
+      show: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
       onChange: (v: number) => {
         setModalForm({
           ...modalForm,
-          status: v,
+          projectStatus: v,
         });
       },
     },
@@ -991,7 +1031,7 @@ function ProjectMgContainer(): JSX.Element {
       label: "搁置",
       name: "shelve",
       type: "switch",
-      show: () => modalForm.nodeLabel === "项目施工",
+      show: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
       required: true,
       onChange: (v: boolean) => {
         setModalForm({
@@ -1004,21 +1044,21 @@ function ProjectMgContainer(): JSX.Element {
       label: "计划开始时间",
       name: "plannedStart",
       type: "date",
-      required: () => modalForm.nodeLabel === "项目施工",
+      required: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
       rules: () =>
-        modalForm.nodeLabel === "项目施工"
+        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
           ? [{ required: true, message: `请选择计划开始时间` }]
           : [],
       disabled: () => !taskPower,
-      show: () => processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
+      show: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "计划结束时间",
       name: "plannedEnd",
       type: "date",
-      required: () => modalForm.nodeLabel === "项目施工",
+      required: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
       rules: () =>
-        modalForm.nodeLabel === "项目施工"
+        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
           ? [{ required: true, message: `请选择计划结束时间` }]
           : [],
       disabled: () => {
@@ -1026,54 +1066,71 @@ function ProjectMgContainer(): JSX.Element {
       },
       show: () =>
         processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) ||
-        processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
+        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "实际开始时间",
       name: "actualStart",
       type: "date",
       required: () => {
-        if (modalForm.status !== 1 && modalForm.nodeLabel === "项目施工") {
+        if (modalForm.projectStatus !== 1 && processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return true;
         }
         return false;
       },
       rules: () => {
-        if (modalForm.status !== 1 && modalForm.nodeLabel === "项目施工") {
+        if (modalForm.projectStatus !== 1 && processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return [{ required: true, message: `请选择实际开始时间` }];
         }
         return [];
       },
       disabled: () => !taskPower,
-      show: () => processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel),
+      show: () => processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
     },
     {
       label: "实际结束时间",
       name: "actualEnd",
       type: "date",
       required: () => {
-        if (!processHandler.startEndTimeNodeKeys.includes(modalForm.nodeLabel)) {
+        if (!processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return true;
         } else {
-          if (modalForm.status === 3 && modalForm.nodeLabel === "项目施工") {
+          if (modalForm.projectStatus === 3 && processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
             return true;
           }
           return false;
         }
       },
       rules: () => {
-        if (!processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)) {
+        if (!processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           return [{ required: true, message: `请选择实际结束时间` }];
         } else {
-          if (modalForm.status === 3 && modalForm.nodeLabel === "项目施工") {
+          if (modalForm.projectStatus === 3 && processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
             return [{ required: true, message: `请选择实际结束时间` }];
           }
           return [];
         }
       },
       disabled: () => !taskPower,
-      show: () => true,
+      show: () => !processHandler.statusNodeKeys.includes(modalForm.nodeLabel),
     },
+    {
+      label: "状态",
+      name: "status",
+      type: "select",
+      options: nodeStatusDict,
+      placeholder: "请选择状态",
+      require: true,
+      disabled: () => !taskPower,
+      show: () => processHandler.statusNodeKeys.includes(modalForm.nodeLabel),
+    },
+    // {
+    //   label: "备注",
+    //   name: "remark",
+    //   type: "textArea",
+    //   disabled: () => !taskPower,
+    //   show: () => true,
+    // },
   ];
 
   const projectFields = [
