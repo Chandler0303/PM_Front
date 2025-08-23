@@ -74,8 +74,9 @@ const ImportModal: React.FC<ImportModalProps> = ({
       if (str) str = str.replace(/\n/g, "");
       return str;
     });
+    
     data.forEach((item, index) => {
-      if (index > 4 && item[10] === "计划时间") {
+      if (index > 4 && item.includes('计划时间')) {
         const project = {
           projCode: item[1],
           name: item[3],
@@ -136,10 +137,10 @@ const ImportModal: React.FC<ImportModalProps> = ({
             nodeData.plannedEnd = toJSDate(plannedData[valIndex]);
             nodeData.actualEnd = toJSDate(actualData[valIndex]);
           } else if (processHandler.statusNodeKeys.includes(node.name)) {
-            nodeData.plannedStart = "";
-            nodeData.actualStart = "";
-            nodeData.plannedEnd = "";
-            nodeData.actualEnd = "";
+            nodeData.plannedStart = null;
+            nodeData.actualStart = null;
+            nodeData.plannedEnd = null;
+            nodeData.actualEnd = null;
             nodeData.status = plannedData[valIndex] === "已完成" ? 1 : 0;
           } else {
             if (node.name === "开工日期") {
@@ -167,7 +168,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
 
   const toJSDate = (excelNum: number) => {
     if (!excelNum) {
-      return "";
+      return null;
     }
     const d = XLSX.SSF.parse_date_code(excelNum);
     return new Date(d.y, d.m - 1, d.d, d.H, d.M, d.S);

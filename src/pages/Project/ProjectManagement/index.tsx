@@ -3,7 +3,7 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState, useMemo, useRef, Children } from "react";
+import React, { useState } from "react";
 import { useSetState, useMount } from "react-use";
 import {
   Form,
@@ -164,7 +164,7 @@ function ProjectMgContainer(): JSX.Element {
       dataIndex: "type",
       key: "type",
       width: 50,
-      render: (v: number, record: TableRecordData) => {
+      render: (v: number) => {
         const data = projectTypeDict.find((s) => s.value == v);
         return data ? data.label : "--";
       },
@@ -190,7 +190,7 @@ function ProjectMgContainer(): JSX.Element {
       dataIndex: "businessType",
       key: "businessType",
       width: 50,
-      render: (v: number, record: TableRecordData) => {
+      render: (v: number) => {
         const data = businessTypeDict.find((s) => s.value == v);
         return data ? data.label : "--";
       },
@@ -400,7 +400,7 @@ function ProjectMgContainer(): JSX.Element {
   }
 
   async function onGetProcedureData(): Promise<void> {
-    return new Promise(async function (resolve, reject) {
+    return new Promise(async function(resolve, reject) {
       const res = await pmApi.getProcedureList();
       if (res && res.success) {
         // 设置流程配置
@@ -435,6 +435,7 @@ function ProjectMgContainer(): JSX.Element {
         message.error(res?.message ?? "数据获取失败");
       }
     } finally {
+      
     }
   }
 
