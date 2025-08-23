@@ -11,7 +11,7 @@ import "@/assets/styles/global.less";
 
 import { ConfigProvider } from "antd";
 import zhCN from "antd/es/locale/zh_CN";
-import moment from "moment/dist/moment";
+import moment from "moment";
 import "moment/dist/locale/zh-cn";
 moment.locale("zh-cn");
 

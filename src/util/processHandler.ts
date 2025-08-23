@@ -159,8 +159,8 @@ class ProcessAHandler extends BaseProcessHandler {
       return this.calcEndTime(record, node);
     } else if (this.customTimeNodeKeys.find((k) => k === node.name)) {
       return this.calcCustomTime(record, node);
-    }else if (this.statusNodeKeys.find((k) => k === node.name)) {
-        return this.calcStatusData(record, node)
+    } else if (this.statusNodeKeys.find((k) => k === node.name)) {
+      return this.calcStatusData(record, node);
     }
   }
 
@@ -184,15 +184,17 @@ class ProcessAHandler extends BaseProcessHandler {
     const currentNode = this.getProjectNodeConfig(record.stages, node.name);
     let val;
     if (currentNode.status === 1) {
-        val = '已完成'
+      val = "已完成";
     } else {
-        const connectNode = this.getProjectNodeConfig(record.stages, "甲方合同签订时间");
-        if (connectNode.actualEnd) {
-            val = '距离' + tools.diffDays(connectNode.actualEnd, new Date()) + '天没有进行招采';
-        } else {
-            val = ''
-        }
-        
+      const connectNode = this.getProjectNodeConfig(
+        record.stages,
+        "甲方合同签订时间"
+      );
+      if (connectNode.actualEnd) {
+        val = tools.diffDays(connectNode.actualEnd, new Date());
+      } else {
+        val = "";
+      }
     }
     return val;
   }
@@ -215,7 +217,10 @@ class ProcessAHandler extends BaseProcessHandler {
               currentNode.actualStart || new Date()
             );
           } else {
-            val = tools.diffDays(currentNode.plannedStart, currentNode.actualStart);
+            val = tools.diffDays(
+              currentNode.plannedStart,
+              currentNode.actualStart
+            );
           }
           break;
       }
@@ -307,21 +312,18 @@ class ProcessAHandler extends BaseProcessHandler {
       return this.calcEndTimeCell(record, node);
     } else if (this.customTimeNodeKeys.find((k) => k === node.name)) {
       return this.calcCustomTimeCell(record, node);
-    }else if (this.statusNodeKeys.find((k) => k === node.name)) {
-        return this.calcStatusDataCell(record, node)
+    } else if (this.statusNodeKeys.find((k) => k === node.name)) {
+      return this.calcStatusDataCell(record, node);
     }
   }
   calcCustomTimeCell(record: any, node: any) {
     if (record.durationLabel !== "偏差分析") {
-        return {}
+      return {};
     }
     const currentNode = this.getProjectNodeConfig(record.stages, node.name);
     if (node.name === "开工日期") {
       let val;
-      if (
-        record.status === 1 &&
-        !record.shelve
-      ) {
+      if (record.status === 1 && !record.shelve) {
         val = tools.diffDays(
           currentNode.plannedStart,
           currentNode.actualStart || new Date()
@@ -340,28 +342,28 @@ class ProcessAHandler extends BaseProcessHandler {
         },
       };
     } else if (node.name === "竣工日期") {
-      return this.calcEndTimeCell(record, node)
+      return this.calcEndTimeCell(record, node);
     } else {
-      return this.calcProjectPlanDurationCell(record, node)
+      return this.calcProjectPlanDurationCell(record, node);
     }
   }
   calcEndTimeCell(record: any, node: any) {
     if (record.durationLabel !== "偏差分析") {
-        return {}
+      return {};
     }
-     const currentNode = this.getProjectNodeConfig(record.stages, node.name);
+    const currentNode = this.getProjectNodeConfig(record.stages, node.name);
 
-      const val = tools.diffDays(currentNode.plannedEnd, currentNode.actualEnd);
-      return {
-        style: {
-          backgroundColor:
-            Number(val) > 0
-              ? Number(val) > 100
-                ? this.errorColor
-                : this.warningColor
-              : this.normalColor,
-        },
-      };
+    const val = tools.diffDays(currentNode.plannedEnd, currentNode.actualEnd);
+    return {
+      style: {
+        backgroundColor:
+          Number(val) > 0
+            ? Number(val) > 100
+              ? this.errorColor
+              : this.warningColor
+            : this.normalColor,
+      },
+    };
   }
   calcProjectPlanDurationCell(record: any, node: any) {
     if (record.durationLabel === "偏差分析" && !record.shelve) {
@@ -399,7 +401,7 @@ class ProcessAHandler extends BaseProcessHandler {
     }
   }
   calcStatusDataCell(record: any, node: any) {
-    return {}
+    return {};
   }
 
   isNodeComplete(node: any) {

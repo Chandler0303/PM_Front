@@ -21,7 +21,7 @@ export const nodeStatusDict = [
   {
     label: "已完成",
     value: 1,
-  }
+  },
 ];
 
 export const projectTypeDict = [
@@ -31,6 +31,17 @@ export const projectTypeDict = [
   },
   {
     label: "成本类",
+    value: 2,
+  },
+];
+
+export const businessTypeDict = [
+  {
+    label: "传统业务",
+    value: 1,
+  },
+  {
+    label: "新业务",
     value: 2,
   },
 ];

@@ -6,6 +6,7 @@ export type ProjectInfo = {
   projCode: string;
   year: string;
   type: number;
+  businessType: number;
   status: number;
   amount: string;
   stage: number;

@@ -26,6 +26,16 @@ export default {
     return;
   },
 
+  async insertProject(params: any) {
+    try {
+      const res: Res = await axios.post(`/api/project/batchInsert`, params);
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
+
   async editProject(params: ProjectInfo) {
     try {
       const res: Res = await axios.put(`/api/project/modify`, params);
@@ -35,6 +45,20 @@ export default {
     }
     return;
   },
+  async importProject(formData: any) {
+    try {
+      const res: Res = await axios.post(`/api/project/import`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data", // 必须设置
+        },
+      });
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
+
   async editProjectNode(params: any) {
     try {
       const res: Res = await axios.put(`/api/project/node/modify`, params);
