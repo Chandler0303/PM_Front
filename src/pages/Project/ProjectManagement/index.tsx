@@ -86,6 +86,7 @@ import ImportModal from "@/components/ImportModal";
 // ==================
 function ProjectMgContainer(): JSX.Element {
   let userList: UserInfo[] = [];
+  console.log('主页刷新')
 
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
@@ -138,11 +139,17 @@ function ProjectMgContainer(): JSX.Element {
       key: "stage",
       width: 100,
       render: (v: number, record: TableRecordData) => {
-        let lastIndex = record.stages.findLastIndex((s) => {
-          return s.nodes.every((n: any) => processHandler.isNodeComplete(n));
-        });
-        lastIndex =
-          lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
+        let lastIndex = -1
+        if (record.stage !== 0) {
+           lastIndex = record.stage - 1
+        } else {
+            lastIndex = record.stages.findLastIndex((s) => {
+            return s.nodes.every((n: any) => processHandler.isNodeComplete(n));
+          });
+          lastIndex =
+            lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
+        }
+        
         const nowStage = record.stages[lastIndex];
         return nowStage.seq + "." + nowStage.name;
       },
@@ -435,7 +442,6 @@ function ProjectMgContainer(): JSX.Element {
         message.error(res?.message ?? "数据获取失败");
       }
     } finally {
-      
     }
   }
 
@@ -485,8 +491,10 @@ function ProjectMgContainer(): JSX.Element {
             company: (data.company as any).id,
             name: data.name,
             projCode: data.projCode,
+            stage: data.stage === 0 ? undefined : data.stage,
             status: data.status,
             type: Number(data.type),
+            businessType: Number(data.businessType),
             year: dayjs(data.year),
           });
         }
@@ -638,7 +646,7 @@ function ProjectMgContainer(): JSX.Element {
         addProject({
           ...values,
           year: Number(values.year.format("YYYY")),
-          stage: 1,
+          stage: 0,
           status: 1,
           stages: createStages(),
         });
@@ -1263,6 +1271,22 @@ function ProjectMgContainer(): JSX.Element {
       options: businessTypeDict,
       placeholder: "请选择业务类型",
       rules: [{ required: true, message: "请选择业务类型" }],
+    },
+    {
+      label: "项目阶段",
+      name: "stage",
+      type: "select",
+      required: true,
+      options: processHandler.getProcedureStages().map(s => {
+        return {
+          label: s.stageName,
+          value: s.seq
+        }
+      }),
+      placeholder: "请选择项目阶段",
+      rules: [{ required: true, message: "请选择项目阶段" }],
+       show: () =>
+        modal.operateType === 'up'
     },
     {
       label: "分公司",
