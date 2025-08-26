@@ -25,7 +25,7 @@ interface ProjectTableProps {
   data: TableRecordData[];
   procedureList: any[];
   processHandler: any;
-  userList: UserInfo[]
+  userList: UserInfo[];
 }
 
 const ProjectTable: React.FC<ProjectTableProps> = React.memo(
@@ -165,7 +165,7 @@ const ProjectTable: React.FC<ProjectTableProps> = React.memo(
                 <span
                   key="1"
                   className="control-btn blue"
-                  onClick={() => onModalShow(record, "up")}
+                  // onClick={() => onModalShow(record, "up")}
                 >
                   <Tooltip placement="top" title="修改">
                     <ToolOutlined
@@ -178,7 +178,7 @@ const ProjectTable: React.FC<ProjectTableProps> = React.memo(
               <span
                 key="2"
                 className="control-btn blue"
-                onClick={() => onModalShow(record, "handle")}
+                // onClick={() => onModalShow(record, "handle")}
               >
                 <Tooltip placement="top" title="流程管理">
                   <EditOutlined
@@ -191,7 +191,7 @@ const ProjectTable: React.FC<ProjectTableProps> = React.memo(
                 <Popconfirm
                   key="3"
                   title="确定删除吗?"
-                  onConfirm={() => onDel(record.id)}
+                  // onConfirm={() => onDel(record.id)}
                   okText="确定"
                   cancelText="取消"
                 >
@@ -283,9 +283,9 @@ const ProjectTable: React.FC<ProjectTableProps> = React.memo(
       );
     };
 
-     useEffect(() => {
-        tableColumnsHandle();
-      }, [procedureList]);
+    useEffect(() => {
+      tableColumnsHandle();
+    }, [procedureList]);
 
     return (
       <div className="diy-table">

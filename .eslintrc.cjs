@@ -27,6 +27,7 @@ module.exports = {
   rules: {
     "prefer-const": "warn",
     "no-prototype-builtins": "off",
+    'react/react-in-jsx-scope': 'off',
     "no-empty": "warn",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/ban-ts-comment": "warn",

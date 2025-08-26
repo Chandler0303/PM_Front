@@ -23,13 +23,11 @@ export interface TableRecordData extends ProjectInfo {
   durationLabel?: string;
 }
 
-export type operateType = "add" | "up" | "handle";
+export type operateType = "add" | "edit" | "import" | "task" | null;
 
 export type ModalType = {
   operateType: operateType;
   nowData: TableRecordData | null;
-  modalShow: boolean;
-  modalLoading: boolean;
 };
 
 export type SearchInfo = {

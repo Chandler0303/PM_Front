@@ -3,21 +3,17 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useSetState, useMount } from "react-use";
 import {
-  Form,
   Button,
   Input,
   Table,
   message,
-  Modal,
   Divider,
-  Select,
   DatePicker,
   Tooltip,
   Popconfirm,
-  Switch,
   Cascader,
 } from "antd";
 
@@ -36,26 +32,13 @@ import {
 import tools from "@/util/tools"; // 工具函数
 import pmApi from "@/api/pm";
 import sysApi from "@/api/sys";
-import dayjs from "dayjs";
 import {
-  nodeStatusDict,
   projectStatusDict,
   projectTypeDict,
   businessTypeDict,
 } from "@/common/dict";
 import AuthWrapper from "@/components/AuthWrapper";
 import ProcessHandlerFactory from "@/util/processHandler";
-
-const formItemLayout = {
-  labelCol: {
-    xs: { span: 24 },
-    sm: { span: 6 },
-  },
-  wrapperCol: {
-    xs: { span: 24 },
-    sm: { span: 17 },
-  },
-};
 
 const processHandler = ProcessHandlerFactory.create("A");
 
@@ -64,38 +47,30 @@ const processHandler = ProcessHandlerFactory.create("A");
 // ==================
 import {
   TableRecordData,
-  operateType,
   ModalType,
   SearchInfo,
   CompanyInfo,
 } from "./index.type";
-import { UserInfo } from "@/models/index.type";
 import { ColumnsType } from "antd/lib/table";
 // ==================
 // CSS
 // ==================
 import "./index.less";
-import { useAuthPowers } from "@/hooks/useAuthPowers";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import TextArea from "antd/lib/input/TextArea";
-import ImportModal from "@/components/ImportModal";
+import ImportModal from "./components/ImportModal";
+import TaskModal from "./components/TaskModal";
+import AddEditModal from "./components/AddEditModal";
+import { UserInfo } from "@/models/index.type";
 
 // ==================
 // 本组件
 // ==================
 function ProjectMgContainer(): JSX.Element {
   let userList: UserInfo[] = [];
-  console.log('主页刷新')
+  console.log("主页刷新");
 
-  const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
   const [companyList, setCompanyList] = useState<SelectData[]>([]);
-  const [nodesData, setNodesData] = useState<SelectData[]>([]);
-  const [taskPower, setTaskPower] = useState(false);
-  const isTaskMg = useAuthPowers("1003");
-  const userinfo = useSelector((state: RootState) => state.app.userinfo);
   const [columns, setColumns] = useState<ColumnsType<TableRecordData>>([
     {
       title: "序号",
@@ -139,17 +114,17 @@ function ProjectMgContainer(): JSX.Element {
       key: "stage",
       width: 100,
       render: (v: number, record: TableRecordData) => {
-        let lastIndex = -1
+        let lastIndex = -1;
         if (record.stage !== 0) {
-           lastIndex = record.stage - 1
+          lastIndex = record.stage - 1;
         } else {
-            lastIndex = record.stages.findLastIndex((s) => {
+          lastIndex = record.stages.findLastIndex((s) => {
             return s.nodes.every((n: any) => processHandler.isNodeComplete(n));
           });
           lastIndex =
             lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
         }
-        
+
         const nowStage = record.stages[lastIndex];
         return nowStage.seq + "." + nowStage.name;
       },
@@ -236,7 +211,12 @@ function ProjectMgContainer(): JSX.Element {
               <span
                 key="1"
                 className="control-btn blue"
-                onClick={() => onModalShow(record, "up")}
+                onClick={() =>
+                  setActiveModal({
+                    operateType: "edit",
+                    nowData: record,
+                  })
+                }
               >
                 <Tooltip placement="top" title="修改">
                   <ToolOutlined
@@ -249,7 +229,12 @@ function ProjectMgContainer(): JSX.Element {
             <span
               key="2"
               className="control-btn blue"
-              onClick={() => onModalShow(record, "handle")}
+              onClick={() =>
+                setActiveModal({
+                  operateType: "task",
+                  nowData: record,
+                })
+              }
             >
               <Tooltip placement="top" title="流程管理">
                 <EditOutlined
@@ -286,19 +271,9 @@ function ProjectMgContainer(): JSX.Element {
   ]);
   const [stagesOptions, setStagesOptions] = useState<SelectData[]>([]);
 
-  // 模态框相关参数
-  const [modal, setModal] = useSetState<ModalType>({
-    operateType: "add", // see查看，add添加，up修改
+  const [activeModal, setActiveModal] = useState<ModalType>({
+    operateType: null,
     nowData: null,
-    modalShow: false,
-    modalLoading: false,
-  });
-  const [importModalOpen, setImportModalOpen] = useState(false);
-
-  const [modalForm, setModalForm] = useSetState({
-    projectStatus: 1,
-    shelve: false,
-    nodeLabel: "",
   });
 
   // 搜索相关参数
@@ -407,7 +382,7 @@ function ProjectMgContainer(): JSX.Element {
   }
 
   async function onGetProcedureData(): Promise<void> {
-    return new Promise(async function(resolve, reject) {
+    return new Promise(async function (resolve, reject) {
       const res = await pmApi.getProcedureList();
       if (res && res.success) {
         // 设置流程配置
@@ -464,409 +439,6 @@ function ProjectMgContainer(): JSX.Element {
     onGetData();
   };
 
-  /**
-   * 添加/修改/查看 模态框出现
-   * @param data 当前选中的那条数据
-   * @param type add添加/up修改/see查看
-   * **/
-  const onModalShow = (
-    data: TableRecordData | null,
-    type: operateType
-  ): void => {
-    setModal({
-      modalShow: true,
-      nowData: data,
-      operateType: type,
-    });
-    // 用setTimeout是因为首次让Modal出现时得等它挂载DOM，不然form对象还没来得及挂载到Form上
-    setTimeout(() => {
-      if (type === "add") {
-        // 新增，需重置表单各控件的值
-        form.resetFields();
-      } else if (type === "up") {
-        // 修改，需设置表单各控件的值为当前所选中行的数据
-        if (data) {
-          form.setFieldsValue({
-            amount: data.amount,
-            company: (data.company as any).id,
-            name: data.name,
-            projCode: data.projCode,
-            stage: data.stage === 0 ? undefined : data.stage,
-            status: data.status,
-            type: Number(data.type),
-            businessType: Number(data.businessType),
-            year: dayjs(data.year),
-          });
-        }
-      } else {
-        if (data) {
-          const nodes: SelectData[] = [];
-          data.stages.forEach((stage) => {
-            stage.nodes.forEach((node: any) => {
-              node.parent = {
-                name: stage.name,
-                seq: stage.seq,
-              };
-              nodes.push({
-                label: node.name,
-                value: node.id,
-                data: node,
-              });
-            });
-          });
-
-          setNodesData(nodes);
-
-          // 获取当前进度节点
-          const selectNode: any = getCurrentNowTask(nodes);
-          setModalForm({
-            ...modalForm,
-            shelve: Boolean(data.shelve),
-            nodeLabel: selectNode.label,
-            projectStatus: data.status,
-          });
-          const formValues = {
-            projectStatus: data.status,
-            status: selectNode.data.status,
-            shelve: Boolean(modal.nowData?.shelve),
-            task: selectNode.value,
-            remark: selectNode.remark,
-            plannedStart: tools.formatAntDate(
-              tools.formatDate(selectNode.data.plannedStart),
-              "YYYY-MM-DD"
-            ),
-            plannedEnd: tools.formatAntDate(
-              tools.formatDate(selectNode.data.plannedEnd),
-              "YYYY-MM-DD"
-            ),
-            actualStart: tools.formatAntDate(
-              tools.formatDate(selectNode.data.actualStart),
-              "YYYY-MM-DD"
-            ),
-            actualEnd: tools.formatAntDate(
-              tools.formatDate(selectNode.data.actualEnd),
-              "YYYY-MM-DD"
-            ),
-          };
-          form.setFieldsValue(formValues);
-          const configNode = processHandler.getNodeConfig(selectNode.data.name);
-          setTaskPower(
-            isTaskMg ||
-              processHandler.taskPowersCheck(
-                configNode,
-                selectNode.data,
-                userinfo?.username
-              )
-          );
-        }
-      }
-    });
-  };
-
-  // 当前用户需要处理的task
-  const getCurrentNowTask = (allTasks: any[]) => {
-    const userId = userinfo?.username;
-    const userTaskList: any[] = [];
-    let filterTasks: any[] = [];
-    let selectTask: any = [];
-    const configNodes = processHandler.getProcedureNodes();
-    configNodes.forEach((n: any) => {
-      if (n.participants.find((p: string) => p == userId)) {
-        userTaskList.push(n);
-      }
-    });
-
-    if (userTaskList.length) {
-      filterTasks = allTasks.filter((t) => {
-        if (userTaskList.find((ut) => ut.name === t.label)) {
-          return true;
-        }
-        return false;
-      });
-    }
-
-    filterTasks = filterTasks.length ? filterTasks : allTasks;
-
-    let selectTaskIndex =
-      filterTasks.findLastIndex((ft) => ft.data.actualEnd || ft.data.status) +
-      1;
-    if (selectTaskIndex > filterTasks.length - 1) {
-      selectTaskIndex = filterTasks.length - 1;
-    }
-    selectTask = filterTasks[selectTaskIndex];
-    return selectTask;
-  };
-
-  const taskChange = (val: number) => {
-    const findNode: any = nodesData.find((n) => n.value === val);
-    const node = findNode ? findNode.data : {};
-    setModalForm({
-      ...modalForm,
-      shelve: Boolean(modal.nowData?.shelve),
-      nodeLabel: findNode.label,
-      projectStatus: modal.nowData?.status,
-    });
-    form.setFieldsValue({
-      task: val,
-      projectStatus: modal.nowData?.status,
-      status: node.status,
-      remark: node.remark,
-      shelve: Boolean(modal.nowData?.shelve),
-      plannedStart: tools.formatAntDate(
-        tools.formatDate(node.plannedStart),
-        "YYYY-MM-DD"
-      ),
-
-      plannedEnd: tools.formatAntDate(
-        tools.formatDate(node.plannedEnd),
-        "YYYY-MM-DD"
-      ),
-      actualStart: tools.formatAntDate(
-        tools.formatDate(node.actualStart),
-        "YYYY-MM-DD"
-      ),
-      actualEnd: tools.formatAntDate(
-        tools.formatDate(node.actualEnd),
-        "YYYY-MM-DD"
-      ),
-    });
-    const configNode = processHandler.getNodeConfig(node.name);
-    setTaskPower(
-      isTaskMg ||
-        processHandler.taskPowersCheck(configNode, node, userinfo?.username)
-    );
-  };
-
-  /** 模态框确定 **/
-  const onOk = async (): Promise<void> => {
-    try {
-      const values = await form.validateFields();
-
-      if (modal.operateType === "add") {
-        addProject({
-          ...values,
-          year: Number(values.year.format("YYYY")),
-          stage: 0,
-          status: 1,
-          stages: createStages(),
-        });
-      } else if (modal.operateType === "up") {
-        editProject({
-          ...values,
-          year: Number(values.year.format("YYYY")),
-          id: modal.nowData?.id,
-        });
-      } else {
-        if (processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
-          editProject({
-            ...modal.nowData,
-            shelve: Number(modalForm.shelve),
-            status: modalForm.projectStatus,
-          });
-        }
-        editHandleProcedure(values);
-      }
-    } catch {
-      // 未通过校验
-    }
-  };
-
-  const addProject = async (values: any) => {
-    setModal({
-      modalLoading: true,
-    });
-    // 新增
-    try {
-      const res: Res | undefined = await pmApi.addProject(values);
-      if (res && res.success) {
-        message.success("添加成功");
-        onGetData();
-        onClose();
-      } else {
-        message.error(res?.message ?? "操作失败");
-      }
-    } finally {
-      setModal({
-        modalLoading: false,
-      });
-    }
-  };
-
-  const editProject = async (values: any) => {
-    setModal({
-      modalLoading: true,
-    });
-    try {
-      const res: Res | undefined = await pmApi.editProject(values);
-      if (res && res.success) {
-        message.success("修改成功");
-        onGetData();
-        onClose();
-      } else {
-        message.error(res?.message ?? "操作失败");
-      }
-    } finally {
-      setModal({
-        modalLoading: false,
-      });
-    }
-  };
-
-  const editHandleProcedure = async (values: any) => {
-    const findIndex = nodesData.findIndex(
-      (n) => n.label === modalForm.nodeLabel
-    );
-
-    if (processHandler.startTimeNodeKeys.includes(modalForm.nodeLabel)) {
-      values.plannedStart = values.actualEnd;
-      values.plannedEnd = values.actualEnd;
-      values.actualStart = values.actualEnd;
-    }
-
-    if (
-      processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) &&
-      !values.plannedEnd
-    ) {
-      message.error("请先处理完上一个节点");
-      return;
-    }
-    setModal({
-      modalLoading: true,
-    });
-    try {
-      const promiseList = [];
-      // 如果是开始节点，则后续所有节点的计划时间都要跟着变，下一个实际开始时间也要变
-      if (processHandler.startTimeNodeKeys.includes(modalForm.nodeLabel)) {
-        promiseList.push(
-          pmApi.editProjectNode({
-            ...values,
-            id: values.task,
-            task: undefined,
-          })
-        );
-        let pStart = values.plannedEnd;
-        let pEnd = values.plannedEnd;
-        for (let i = findIndex + 1; i < nodesData?.length; i++) {
-          const nextNode = nodesData[i].data;
-          if (processHandler.customTimeNodeKeys.includes(nextNode.name)) {
-            break;
-          }
-          if (processHandler.startTimeNodeKeys.includes(nextNode.name)) {
-            break;
-          }
-          if (processHandler.statusNodeKeys.includes(nextNode.name)) {
-            break;
-          }
-
-          pEnd = tools.formatAntDate(
-            tools.addDays(
-              pEnd,
-              processHandler.getNodeConfig(nextNode.name).plannedDays
-            ),
-            "YYYY-MM-DD"
-          );
-          const eidtNode: any = {
-            plannedStart: pStart,
-            plannedEnd: pEnd,
-            id: nextNode.id,
-          };
-
-          if (findIndex + 1 === i) {
-            eidtNode.actualStart = pStart;
-          }
-
-          promiseList.push(pmApi.editProjectNode(eidtNode));
-          pStart = pEnd;
-        }
-      } else if (processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)) {
-        promiseList.push(
-          pmApi.editProjectNode({
-            ...values,
-            id: values.task,
-            task: undefined,
-          })
-        );
-        // 如果是结束节点，则下一个节点的实际开始时间要跟着变
-        const nextNode = nodesData[findIndex + 1];
-        if (
-          nextNode &&
-          processHandler.endTimeNodeKeys.includes(nextNode.data.name)
-        ) {
-          promiseList.push(
-            pmApi.editProjectNode({
-              actualStart: values.actualEnd,
-              id: nextNode.data.id,
-            })
-          );
-        }
-      } else if (
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-      ) {
-        nodesData.forEach((n) => {
-          if (processHandler.customTimeNodeKeys.includes(n.label)) {
-            if (n.label === "开工日期") {
-              promiseList.push(
-                pmApi.editProjectNode({
-                  ...values,
-                  id: n.value,
-                  plannedStart: values.plannedStart || undefined,
-                  plannedEnd: values.plannedEnd || undefined,
-                  actualStart: values.actualStart || undefined,
-                  actualEnd: values.actualEnd || undefined,
-                  task: undefined,
-                })
-              );
-            } else if (n.label === "竣工日期") {
-              promiseList.push(
-                pmApi.editProjectNode({
-                  ...values,
-                  id: n.value,
-                  plannedStart: values.plannedStart || undefined,
-                  plannedEnd: values.plannedEnd || undefined,
-                  actualStart: values.actualStart || undefined,
-                  actualEnd: values.actualEnd || undefined,
-                  task: undefined,
-                })
-              );
-            } else {
-              promiseList.push(
-                pmApi.editProjectNode({
-                  ...values,
-                  id: n.value,
-                  plannedStart: values.plannedStart || undefined,
-                  plannedEnd: values.plannedEnd || undefined,
-                  actualStart: values.actualStart || undefined,
-                  actualEnd: values.actualEnd || undefined,
-                  task: undefined,
-                })
-              );
-            }
-          }
-        });
-      } else {
-        promiseList.push(
-          pmApi.editProjectNode({
-            ...values,
-            id: values.task,
-            task: undefined,
-          })
-        );
-      }
-      const res: any[] = await Promise.all(promiseList);
-      if (res[0] && res[0].success) {
-        message.success("修改成功");
-        onGetData();
-        onClose();
-      } else {
-        message.error(res[0]?.message ?? "操作失败");
-      }
-    } finally {
-      setModal({
-        modalLoading: false,
-      });
-    }
-  };
-
   // 删除某一条数据
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
@@ -883,31 +455,15 @@ function ProjectMgContainer(): JSX.Element {
     }
   };
 
-  const createStages = () => {
-    const stages = processHandler.getProcedureStages();
-    return stages.map((stage: any) => {
-      return {
-        name: stage.stageName,
-        seq: stage.seq,
-        nodes: stage.nodes.map((node: any) => {
-          return {
-            name: node.name,
-            seq: node.seq,
-            status: 0,
-            type: 0,
-            principal: "",
-          };
-        }),
-      };
+  const modalClose = useCallback((refresh = false) => {
+    setActiveModal({
+      operateType: null,
+      nowData: null,
     });
-  };
-
-  /** 模态框关闭 **/
-  const onClose = () => {
-    setModal({
-      modalShow: false,
-    });
-  };
+    if (refresh) {
+      onGetData();
+    }
+  }, []);
 
   const stagesOptionsHandle = (stages: any[]) => {
     return stages.map((stage: any) => {
@@ -1012,293 +568,6 @@ function ProjectMgContainer(): JSX.Element {
     );
   };
 
-  const renderFields = (fields: any[]) => {
-    return fields
-      .filter((field) => field.show?.() ?? true)
-      .map((field) => (
-        <Form.Item
-          key={field.name}
-          label={field.label}
-          name={field.name}
-          required={
-            typeof field.required === "function"
-              ? field.required()
-              : field.required
-          }
-          {...formItemLayout}
-          rules={
-            typeof field.required === "function" ? field.rules() : field.rules
-          }
-        >
-          {field.type === "date" || field.type === "year" ? (
-            <DatePicker
-              style={{ width: "100%" }}
-              picker={field.type}
-              format={field.format}
-              disabled={
-                typeof field.disabled === "function"
-                  ? field.disabled()
-                  : field.disabled
-              }
-              placeholder={`请选择${field.label}`}
-            />
-          ) : field.type === "select" ? (
-            <Select
-              options={field.options}
-              placeholder={`请选择${field.label}`}
-              onChange={field.onChange}
-            />
-          ) : field.type === "switch" ? (
-            <Switch
-              checkedChildren="开启"
-              unCheckedChildren="关闭"
-              checked={field.value}
-              defaultChecked={modalForm.shelve}
-              onChange={field.onChange}
-            />
-          ) : field.type === "textArea" ? (
-            <TextArea
-              showCount
-              maxLength={100}
-              placeholder={`请输入${field.label}`}
-              style={{ height: 120, resize: "none" }}
-            />
-          ) : (
-            <Input placeholder={`请输入${field.label}`} />
-          )}
-        </Form.Item>
-      ));
-  };
-
-  const handleFields = [
-    {
-      label: "任务",
-      name: "task",
-      type: "select",
-      options: nodesData,
-      required: true,
-      onChange: taskChange,
-    },
-    {
-      label: "工程状态",
-      name: "projectStatus",
-      type: "select",
-      required: true,
-      options: projectStatusDict,
-      placeholder: "请选择状态",
-      rules: [{ required: true, message: "请选择状态" }],
-      show: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-      onChange: (v: number) => {
-        setModalForm({
-          ...modalForm,
-          projectStatus: v,
-        });
-      },
-    },
-    {
-      label: "搁置",
-      name: "shelve",
-      type: "switch",
-      show: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-      required: true,
-      onChange: (v: boolean) => {
-        setModalForm({
-          ...modalForm,
-          shelve: v,
-        });
-      },
-    },
-    {
-      label: "计划开始时间",
-      name: "plannedStart",
-      type: "date",
-      required: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-      rules: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-          ? [{ required: true, message: `请选择计划开始时间` }]
-          : [],
-      disabled: () => !taskPower,
-      show: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-    },
-    {
-      label: "计划结束时间",
-      name: "plannedEnd",
-      type: "date",
-      required: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-      rules: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-          ? [{ required: true, message: `请选择计划结束时间` }]
-          : [],
-      disabled: () => {
-        return processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel)
-          ? true
-          : !taskPower;
-      },
-      show: () =>
-        processHandler.endTimeNodeKeys.includes(modalForm.nodeLabel) ||
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-    },
-    {
-      label: "实际开始时间",
-      name: "actualStart",
-      type: "date",
-      required: () => {
-        if (
-          modalForm.projectStatus !== 1 &&
-          processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-        ) {
-          return true;
-        }
-        return false;
-      },
-      rules: () => {
-        if (
-          modalForm.projectStatus !== 1 &&
-          processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-        ) {
-          return [{ required: true, message: `请选择实际开始时间` }];
-        }
-        return [];
-      },
-      disabled: () => !taskPower,
-      show: () =>
-        processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel),
-    },
-    {
-      label: "实际结束时间",
-      name: "actualEnd",
-      type: "date",
-      required: () => {
-        if (!processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
-          return true;
-        } else {
-          if (
-            modalForm.projectStatus === 3 &&
-            processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-          ) {
-            return true;
-          }
-          return false;
-        }
-      },
-      rules: () => {
-        if (!processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
-          return [{ required: true, message: `请选择实际结束时间` }];
-        } else {
-          if (
-            modalForm.projectStatus === 3 &&
-            processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)
-          ) {
-            return [{ required: true, message: `请选择实际结束时间` }];
-          }
-          return [];
-        }
-      },
-      disabled: () => !taskPower,
-      show: () => !processHandler.statusNodeKeys.includes(modalForm.nodeLabel),
-    },
-    {
-      label: "状态",
-      name: "status",
-      type: "select",
-      options: nodeStatusDict,
-      placeholder: "请选择状态",
-      require: true,
-      disabled: () => !taskPower,
-      show: () => processHandler.statusNodeKeys.includes(modalForm.nodeLabel),
-    },
-    // {
-    //   label: "备注",
-    //   name: "remark",
-    //   type: "textArea",
-    //   disabled: () => !taskPower,
-    //   show: () => true,
-    // },
-  ];
-
-  const projectFields = [
-    {
-      label: "工程编号",
-      name: "projCode",
-      type: "input",
-      required: true,
-      placeholder: "请输入工程编号",
-      rules: [{ required: true, whitespace: true, message: "必填" }],
-    },
-    {
-      label: "年度",
-      name: "year",
-      type: "year",
-      required: true,
-      placeholder: "请选择年份",
-      rules: [{ required: true, message: "必填" }],
-    },
-    {
-      label: "工程名称",
-      name: "name",
-      type: "input",
-      required: true,
-      placeholder: "请输入工程名称",
-      rules: [{ required: true, whitespace: true, message: "必填" }],
-    },
-    {
-      label: "合同金额",
-      name: "amount",
-      type: "input",
-      required: true,
-      placeholder: "请输入合同金额",
-      rules: [{ required: true, whitespace: true, message: "必填" }],
-    },
-    {
-      label: "项目类型",
-      name: "type",
-      type: "select",
-      required: true,
-      options: projectTypeDict,
-      placeholder: "请选择项目类型",
-      rules: [{ required: true, message: "请选择项目类型" }],
-    },
-    {
-      label: "业务类型",
-      name: "businessType",
-      type: "select",
-      required: true,
-      options: businessTypeDict,
-      placeholder: "请选择业务类型",
-      rules: [{ required: true, message: "请选择业务类型" }],
-    },
-    {
-      label: "项目阶段",
-      name: "stage",
-      type: "select",
-      required: true,
-      options: processHandler.getProcedureStages().map(s => {
-        return {
-          label: s.stageName,
-          value: s.seq
-        }
-      }),
-      placeholder: "请选择项目阶段",
-      rules: [{ required: true, message: "请选择项目阶段" }],
-       show: () =>
-        modal.operateType === 'up'
-    },
-    {
-      label: "分公司",
-      name: "company",
-      type: "select",
-      required: true,
-      options: companyList,
-      placeholder: "请选择分公司",
-      rules: [{ required: true, message: "请选择分公司" }],
-    },
-  ];
-
   return (
     <div>
       <div className="g-search">
@@ -1308,7 +577,12 @@ function ProjectMgContainer(): JSX.Element {
               <Button
                 type="primary"
                 icon={<PlusCircleOutlined />}
-                onClick={() => onModalShow(null, "add")}
+                onClick={() =>
+                  setActiveModal({
+                    operateType: "add",
+                    nowData: null,
+                  })
+                }
               >
                 添加项目
               </Button>
@@ -1319,7 +593,12 @@ function ProjectMgContainer(): JSX.Element {
               <Button
                 type="primary"
                 icon={<UploadOutlined />}
-                onClick={() => setImportModalOpen(true)}
+                onClick={() =>
+                  setActiveModal({
+                    operateType: "import",
+                    nowData: null,
+                  })
+                }
               >
                 导入项目
               </Button>
@@ -1405,36 +684,38 @@ function ProjectMgContainer(): JSX.Element {
       </div>
 
       {/* 模态框 */}
-      <Modal
-        title={
-          { add: "新增", up: "修改", handle: "任务管理" }[modal.operateType]
-        }
-        open={modal.modalShow}
-        onOk={onOk}
-        onCancel={onClose}
-        okButtonProps={{
-          disabled: modal.operateType === "handle" && !taskPower,
-        }}
-        confirmLoading={modal.modalLoading}
-      >
-        <Form
-          form={form}
-          initialValues={{
-            type: 1,
-          }}
-        >
-          {modal.operateType === "handle"
-            ? renderFields(handleFields)
-            : renderFields(projectFields)}
-        </Form>
-      </Modal>
+      {(activeModal.operateType === "add" ||
+        activeModal.operateType === "edit") && (
+        <AddEditModal
+          open={
+            activeModal.operateType === "add" ||
+            activeModal.operateType === "edit"
+          }
+          onClose={modalClose}
+          companyList={companyList}
+          type={activeModal.operateType}
+          data={activeModal.nowData}
+          processHandler={processHandler}
+        />
+      )}
 
-      <ImportModal
-        open={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        companyList={companyList}
-        processHandler={processHandler}
-      />
+      {activeModal.operateType === "task" && (
+        <TaskModal
+          open={activeModal.operateType === "task"}
+          onClose={modalClose}
+          data={activeModal.nowData}
+          processHandler={processHandler}
+        />
+      )}
+
+      {activeModal.operateType === "import" && (
+        <ImportModal
+          open={activeModal.operateType === "import"}
+          onClose={modalClose}
+          companyList={companyList}
+          processHandler={processHandler}
+        />
+      )}
     </div>
   );
 }

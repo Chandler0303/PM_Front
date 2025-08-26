@@ -6,30 +6,27 @@ import { SearchInfo } from "../index.type";
 
 interface ProjectSearchProps {
   handleSearch: (params: SearchInfo) => void;
-  stagesOptions: SelectData[],
-  children?: ReactNode
+  stagesOptions: SelectData[];
+  children?: ReactNode;
 }
 
-const ProjectSearch: React.FC<ProjectSearchProps> = React.memo(({
-  handleSearch,
-  stagesOptions,
-  children
-}) => {
-    console.log('search 刷新了')
-     // 搜索相关参数
-  const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    name: undefined, // 用户名
-    year: undefined, // 年份
-    nodeStatus: undefined, // 节点状态
-  });
+const ProjectSearch: React.FC<ProjectSearchProps> = React.memo(
+  ({ handleSearch, stagesOptions, children }) => {
+    console.log("search 刷新了");
+    // 搜索相关参数
+    const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
+      name: undefined, // 用户名
+      year: undefined, // 年份
+      nodeStatus: undefined, // 节点状态
+    });
 
-  const search = () => {
-    handleSearch({...searchInfo})
-  }
+    const search = () => {
+      handleSearch({ ...searchInfo });
+    };
 
-  return (
-     <div className="g-search">
-       {children}
+    return (
+      <div className="g-search">
+        {children}
         <Divider type="vertical" />
         {
           <ul className="search-ul">
@@ -83,18 +80,15 @@ const ProjectSearch: React.FC<ProjectSearchProps> = React.memo(({
               />
             </li>
             <li>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={search}
-              >
+              <Button type="primary" icon={<SearchOutlined />} onClick={search}>
                 搜索
               </Button>
             </li>
           </ul>
         }
       </div>
-  );
-});
+    );
+  }
+);
 
 export default ProjectSearch;
