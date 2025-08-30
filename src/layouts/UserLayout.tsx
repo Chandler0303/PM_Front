@@ -3,14 +3,12 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React from "react";
 import { Outlet } from "react-router-dom";
 import { Layout } from "antd";
 
 // ==================
 // 自定义的东西
 // ==================
-import "./UserLayout.less";
 
 // ==================
 // 组件
@@ -22,8 +20,8 @@ const { Content } = Layout;
 // ==================
 export default function AppContainer(): JSX.Element {
   return (
-    <Layout className="page-user">
-      <Content className="content">
+    <Layout className="w-full h-screen">
+      <Content>
         <Outlet />
       </Content>
     </Layout>

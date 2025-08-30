@@ -1,10 +1,10 @@
 // 菜单添加，修改时的参数类型
 export interface MenuParam {
-  id?: number; // ID,添加时可以没有id
+  id?: string; // ID,添加时可以没有id
   title: string; // 标题
   icon?: string; // 图标
   url: string; // 链接路径
-  parent: number | null; // 父级ID
+  parent: string | null; // 父级ID
   desc: string; // 描述
   sorts: number; // 排序编号
   children?: Menu[]; // 子菜单
@@ -12,7 +12,7 @@ export interface MenuParam {
 
 // 菜单对象
 export interface Menu extends MenuParam {
-  id: number; // ID
+  id: string; // ID
 }
 
 // 菜单id和权限id
@@ -61,6 +61,7 @@ export interface UserBasicInfo {
 
 // 添加修改用户时参数的数据类型
 export interface UserBasicInfoParam {
+  avatar: string | null;
   id?: number; // ID
   username: string; // 用户名
   password: string | number; // 密码

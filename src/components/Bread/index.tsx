@@ -3,7 +3,6 @@ import React, { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Breadcrumb } from "antd";
 import { EnvironmentOutlined } from "@ant-design/icons";
-import "./index.less";
 import { Menu } from "@/models/index.type";
 
 interface Props {
@@ -16,9 +15,9 @@ export default function BreadCom(props: Props): JSX.Element {
   /** 根据当前location动态生成对应的面包屑 **/
   const breads = useMemo(() => {
     const paths: string = location.pathname;
-    const breads: JSX.Element[] = [];
+    const breads: Menu[] = [];
 
-    let parentId: number | null = null;
+    let parentId: string | null = null;
     do {
       const pathObj: Menu | undefined = props.menus.find(
         (v) => v.id === parentId || v.url === paths
@@ -26,7 +25,7 @@ export default function BreadCom(props: Props): JSX.Element {
 
       if (pathObj) {
         breads.push(
-          <Breadcrumb.Item key={pathObj.id}>{pathObj.title}</Breadcrumb.Item>
+         pathObj
         );
         parentId = pathObj.parent;
       } else {
@@ -39,9 +38,9 @@ export default function BreadCom(props: Props): JSX.Element {
   }, [location.pathname, props.menus]);
 
   return (
-    <div className="bread">
-      <EnvironmentOutlined className="icon" />
-      <Breadcrumb>{breads}</Breadcrumb>
+    <div className="flex items-center p-[15px]">
+      <EnvironmentOutlined className="mr-[5px] text-[#22cc22]" />
+      <Breadcrumb items={breads.map(bread => ({ title: bread.title, key: bread.id }))}></Breadcrumb>
     </div>
   );
 }

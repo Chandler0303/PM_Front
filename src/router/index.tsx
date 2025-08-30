@@ -3,11 +3,10 @@
 // ==================
 // 第三方库
 // ==================
-import React, { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { message } from "antd";
-import loadable from "@loadable/component";
 
 // ==================
 // 自定义的东西
@@ -34,27 +33,14 @@ import { RootState, Dispatch } from "@/store";
 // ==================
 // 异步加载各路由模块
 // ==================
-const [
-  NotFound,
-  NoPower,
-  Login,
-  Home,
-  ProjectManagement,
-  ProcedureManagement,
-  UserAdmin,
-] = [
-  () => import("../pages/ErrorPages/404"),
-  () => import("../pages/ErrorPages/401"),
-  () => import("../pages/Login"),
-  () => import("../pages/Home"),
-  () => import("../pages/Project/ProjectManagement"),
-  () => import("../pages/Project/ProcedureManagement"),
-  () => import("../pages/System/UserAdmin"),
-].map((item) => {
-  return loadable(item as any, {
-    fallback: <Loading />,
-  });
-});
+const NotFound = lazy(() => import("../pages/ErrorPages/404"));
+const NoPower = lazy(() => import("../pages/ErrorPages/401"));
+const Login = lazy(() => import("../pages/Login"));
+const Home = lazy(() => import("../pages/Home"));
+const ProjectManagement = lazy(() => import("../pages/Project/ProjectManagement"));
+const ProcedureManagement = lazy(() => import("../pages/Project/ProcedureManagement"));
+const ProjectAnalyse = lazy(() => import("../pages/Project/ProjectAnalyse"));
+const UserAdmin = lazy(() => import("../pages/System/UserAdmin"));
 
 // ==================
 // 本组件
@@ -74,58 +60,69 @@ function RouterCom(): JSX.Element {
     }
   }, [dispatch.app, userinfo]);
   return (
-    <Routes>
-      <Route
-        path="/user"
-        element={
-          <AuthWithLogin>
-            <UserLayout />
-          </AuthWithLogin>
-        }
-      >
-        <Route index element={<Navigate to="login" />}></Route>
-        <Route path="login" element={<Login />}></Route>
-        <Route path="*" element={<Navigate to="login" />} />
-      </Route>
-      <Route
-        path="/"
-        element={
-          <AuthNoLogin>
-            <BasicLayout />
-          </AuthNoLogin>
-        }
-      >
-        <Route index element={<Navigate to="home" />} />
-        <Route path="home" element={<Home />} />
+    <Suspense fallback={<Loading />}>
+      {/* 在这里写 <Routes> <Route element={<Home />} /> ... */}
+      <Routes>
         <Route
-          path="project/management"
+          path="/user"
           element={
-            <AuthNoPower>
-              <ProjectManagement />
-            </AuthNoPower>
+            <AuthWithLogin>
+              <UserLayout />
+            </AuthWithLogin>
           }
-        />
+        >
+          <Route index element={<Navigate to="login" />}></Route>
+          <Route path="login" element={<Login />}></Route>
+          <Route path="*" element={<Navigate to="login" />} />
+        </Route>
         <Route
-          path="project/procedureMg"
+          path="/"
           element={
-            <AuthNoPower>
-              <ProcedureManagement />
-            </AuthNoPower>
+            <AuthNoLogin>
+              <BasicLayout />
+            </AuthNoLogin>
           }
-        />
-        <Route
-          path="system/useradmin"
-          element={
-            <AuthNoPower>
-              <UserAdmin />
-            </AuthNoPower>
-          }
-        />
-        <Route path="404" element={<NotFound />} />
-        <Route path="401" element={<NoPower />} />
-        <Route path="*" element={<Navigate to="404" />} />
-      </Route>
-    </Routes>
+        >
+          <Route index element={<Navigate to="home" />} />
+          <Route path="home" element={<Home />} />
+          <Route
+            path="project/management"
+            element={
+              <AuthNoPower>
+                <ProjectManagement />
+              </AuthNoPower>
+            }
+          />
+          <Route
+            path="project/procedureMg"
+            element={
+              <AuthNoPower>
+                <ProcedureManagement />
+              </AuthNoPower>
+            }
+          />
+          <Route
+            path="project/analyse"
+            element={
+              <AuthNoPower>
+                <ProjectAnalyse />
+              </AuthNoPower>
+            }
+          />
+          <Route
+            path="system/useradmin"
+            element={
+              <AuthNoPower>
+                <UserAdmin />
+              </AuthNoPower>
+            }
+          />
+          <Route path="404" element={<NotFound />} />
+          <Route path="401" element={<NoPower />} />
+          <Route path="*" element={<Navigate to="404" />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 

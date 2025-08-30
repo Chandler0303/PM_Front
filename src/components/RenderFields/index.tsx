@@ -48,6 +48,7 @@ export default function RenderFields({ fields }: Props) {
           <Select
             options={field.options}
             placeholder={`请选择${field.label}`}
+            allowClear={!field.required}
             onChange={field.onChange}
           />
         ) : field.type === "switch" ? (

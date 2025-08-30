@@ -2,7 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import eslintPlugin from "vite-plugin-eslint";
 import {createStyleImportPlugin, AntdResolve} from 'vite-plugin-style-import';
-import { resolve } from "path";
+import path, { resolve } from "path";
+import tailwindcss from '@tailwindcss/vite'
 
 function pathResolve(dir) {
   return resolve(process.cwd(), ".", dir);
@@ -22,6 +23,8 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tailwindcss(),
+    
     eslintPlugin({
       cache: false,
       failOnError: false,
@@ -39,12 +42,19 @@ export default defineConfig({
     },
     postcss:{}
   },
+  optimizeDeps: {
+    include: ['classnames', 'react', 'react-dom']
+  },
   resolve: {
     alias: [
-      {
-        find: /@\//,
-        replacement: `${pathResolve("src")}/`,
-      },
-    ],
+  {
+    find: /@\//,
+    replacement: `${pathResolve("src")}/`,
+  },
+  {
+    find: 'react-is',
+    replacement: path.resolve(__dirname, 'node_modules/react-is'),
+  },
+],
   },
 })

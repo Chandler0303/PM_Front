@@ -16,6 +16,7 @@ import {
   Divider,
   Select,
   Popconfirm,
+  Upload,
 } from "antd";
 import {
   EditOutlined,
@@ -23,6 +24,8 @@ import {
   PlusCircleOutlined,
   SearchOutlined,
   DeleteOutlined,
+  LoadingOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 
 // ==================
@@ -67,6 +70,19 @@ import {
 // ==================
 import "./index.less";
 import AuthWrapper from "@/components/AuthWrapper";
+import { UploadChangeParam } from "antd/es/upload/interface";
+
+const beforeUpload = (file: File) => {
+  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+  if (!isJpgOrPng) {
+    message.error('请上传JPG/PNG文件!');
+  }
+  const isLt2M = file.size / 1024 / 1024 < 2;
+  if (!isLt2M) {
+    message.error('文件大小不能超过2MB!');
+  }
+  return isJpgOrPng && isLt2M;
+};
 
 // ==================
 // 本组件
@@ -76,7 +92,7 @@ function UserAdminContainer(): JSX.Element {
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [orgData, setOrgData] = useState<SelectData[]>([]);
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
-
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   // 模态框相关参数
   const [modal, setModal] = useSetState<ModalType>({
     operateType: "add", // add添加，up修改
@@ -180,6 +196,7 @@ function UserAdminContainer(): JSX.Element {
           ...data,
           org: data.org.id,
         });
+        setImageUrl(data.avatar)
       }
     });
   };
@@ -192,6 +209,7 @@ function UserAdminContainer(): JSX.Element {
         modalLoading: true,
       });
       const params: UserBasicInfoParam = {
+        avatar: imageUrl,
         username: values.username,
         password: values.password,
         name: values.name,
@@ -258,6 +276,7 @@ function UserAdminContainer(): JSX.Element {
 
   /** 模态框关闭 **/
   const onClose = () => {
+    setImageUrl(null)
     setModal({
       modalShow: false,
     });
@@ -407,6 +426,24 @@ function UserAdminContainer(): JSX.Element {
     },
   ];
 
+  const handleChange = (info: UploadChangeParam) => {
+    if (info.file.status === 'uploading') {
+      setLoading(true);
+      return;
+    }
+    if (info.file.status === 'done' && info.file.response.success) {
+      setLoading(false);
+      setImageUrl(info.file.response.file.filePath);
+    }
+  };
+
+  const uploadButton = (
+    <button style={{ border: 0, background: 'none', cursor: 'pointer' }} type="button">
+      {loading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div style={{ marginTop: 8 }}>上传</div>
+    </button>
+  );
+
   return (
     <div>
       <div className="g-search">
@@ -465,6 +502,22 @@ function UserAdminContainer(): JSX.Element {
         confirmLoading={modal.modalLoading}
       >
         <Form form={form}>
+          <Form.Item
+            label="头像"
+            name="imageUrl"
+            {...formItemLayout}
+          >
+            <Upload
+              name="file"
+              listType="picture-card"
+              showUploadList={false}
+              action="/api/common/upload"
+              beforeUpload={beforeUpload}
+              onChange={handleChange}
+            >
+              {imageUrl ? <img src={imageUrl} alt="file" style={{ width: '100%' }} /> : uploadButton}
+            </Upload>
+          </Form.Item>
           <Form.Item
             label="账号"
             name="username"

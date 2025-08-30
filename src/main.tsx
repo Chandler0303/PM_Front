@@ -8,6 +8,7 @@ import Router from "./router";
 import "normalize.css";
 import "@/assets/styles/default.less";
 import "@/assets/styles/global.less";
+import "@/assets/styles/tailwindcss/index.css"
 
 import { ConfigProvider } from "antd";
 import zhCN from "antd/es/locale/zh_CN";

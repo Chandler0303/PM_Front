@@ -7,6 +7,7 @@ export type { UserBasicInfoParam } from "@/models/index.type";
 
 // 列表table的数据类型
 export type TableRecordData = {
+  avatar: string | null;
   key?: number;
   id: number;
   serial: number; // 序号

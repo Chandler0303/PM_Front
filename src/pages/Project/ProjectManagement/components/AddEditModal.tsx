@@ -5,10 +5,12 @@ import { projectTypeDict, businessTypeDict } from "@/common/dict";
 import { TableRecordData } from "../index.type";
 import RenderFields from "@/components/RenderFields";
 import dayjs from "dayjs";
+import { UserInfo } from "@/models/index.type";
 
 interface TaskModalProps {
   data: TableRecordData | null;
   companyList: SelectData[];
+  userList: UserInfo[];
   type: string | null;
   open: boolean;
   onClose: (refresh?: boolean) => void;
@@ -16,7 +18,7 @@ interface TaskModalProps {
 }
 
 const AddEditModal: React.FC<TaskModalProps> = React.memo(
-  ({ open, onClose, data, type, companyList, processHandler }) => {
+  ({ open, onClose, data, type, companyList, userList, processHandler }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false); // 数据是否正在加载中
 
@@ -28,8 +30,9 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         // 修改，需设置表单各控件的值为当前所选中行的数据
         if (data) {
           form.setFieldsValue({
+            user: data.user ? data.user.id : null,
             amount: data.amount,
-            company: (data.company as any).id,
+            company: data.company ? data.company.id : null,
             name: data.name,
             projCode: data.projCode,
             stage: data.stage === 0 ? undefined : data.stage,
@@ -124,7 +127,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         name: "projCode",
         type: "input",
         required: true,
-        placeholder: "请输入工程编号",
         rules: [{ required: true, whitespace: true, message: "必填" }],
       },
       {
@@ -132,7 +134,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         name: "year",
         type: "year",
         required: true,
-        placeholder: "请选择年份",
         rules: [{ required: true, message: "必填" }],
       },
       {
@@ -140,7 +141,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         name: "name",
         type: "input",
         required: true,
-        placeholder: "请输入工程名称",
         rules: [{ required: true, whitespace: true, message: "必填" }],
       },
       {
@@ -148,7 +148,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         name: "amount",
         type: "input",
         required: true,
-        placeholder: "请输入合同金额",
         rules: [{ required: true, whitespace: true, message: "必填" }],
       },
       {
@@ -157,7 +156,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         type: "select",
         required: true,
         options: projectTypeDict,
-        placeholder: "请选择项目类型",
         rules: [{ required: true, message: "请选择项目类型" }],
       },
       {
@@ -166,7 +164,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         type: "select",
         required: true,
         options: businessTypeDict,
-        placeholder: "请选择业务类型",
         rules: [{ required: true, message: "请选择业务类型" }],
       },
       {
@@ -180,7 +177,6 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
             value: s.seq,
           };
         }),
-        placeholder: "请选择项目阶段",
         rules: [{ required: true, message: "请选择项目阶段" }],
         show: () => type === "edit",
       },
@@ -190,8 +186,18 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
         type: "select",
         required: true,
         options: companyList,
-        placeholder: "请选择分公司",
         rules: [{ required: true, message: "请选择分公司" }],
+      },
+      {
+        label: "项目经理",
+        name: "user",
+        type: "select",
+        options: userList.map(item => {
+          return {
+            label: item.name,
+            value: item.id
+          }
+        })
       },
     ];
 

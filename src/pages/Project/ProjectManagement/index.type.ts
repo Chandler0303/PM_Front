@@ -12,7 +12,8 @@ export type ProjectInfo = {
   stage: number;
   stages: any[];
   shelve: number;
-  company: number;
+  company: any;
+  user: any
 };
 
 // 列表table的数据类型

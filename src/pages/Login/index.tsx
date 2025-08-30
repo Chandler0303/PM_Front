@@ -23,7 +23,6 @@ import { Dispatch } from "@/store";
 // ==================
 // CSS
 // ==================
-import "./index.less";
 
 // ==================
 // 本组件
@@ -63,15 +62,15 @@ function LoginContainer(): JSX.Element {
   };
 
   return (
-    <div className="page-login">
-      <div className="canvasBox">
+    <div className="w-full h-screen flex-center">
+      <div>
         <CanvasBack row={12} col={8} />
       </div>
-      <div className="loginBox">
-        <Form form={form}>
-          <div className="title">
-            <img src={LogoImg} alt="logo" />
-            <span>PM</span>
+      <div className="flex-center flex-col h-full w-[400px] relative">
+        <Form form={form} className="w-full">
+          <div className="flex-center mb-[30px]">
+            <img className="h-[56px] mr-[10px]" src={LogoImg} alt="logo" />
+            <span className="text-[#fff] h1-title">PM</span>
           </div>
           <div>
             <Form.Item
@@ -110,7 +109,7 @@ function LoginContainer(): JSX.Element {
             </Form.Item>
             <Form.Item>
               <Button
-                className="submit-btn"
+                className="w-full"
                 size="large"
                 type="primary"
                 loading={loading}

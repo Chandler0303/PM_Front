@@ -5,13 +5,12 @@
 // ==================
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate, Outlet } from "react-router-dom";
+import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { Layout, message } from "antd";
 import { menus } from "@/router/mens";
 // ==================
 // 自定义的东西
 // ==================
-import "./BasicLayout.less";
 
 // ==================
 // 组件
@@ -35,7 +34,8 @@ function BasicLayoutCom(): JSX.Element {
   const navigate = useNavigate();
   const userinfo = useSelector((state: RootState) => state.app.userinfo);
   const [collapsed, setCollapsed] = useState(false); // 菜单栏是否收起
-
+  const customPageList = ["/project/analyse", "/home"]
+  const location = useLocation();
   // 退出登录
   const onLogout = () => {
     dispatch.app.onLogout().then(() => {
@@ -43,12 +43,10 @@ function BasicLayoutCom(): JSX.Element {
       navigate("/user/login");
     });
   };
-
   return (
-    <Layout className="page-basic" hasSider>
+    <Layout className="w-full h-screen" hasSider>
       <MenuCom data={menus} collapsed={collapsed} />
-
-      <Layout>
+      <Layout className="h-full">
         <Header
           collapsed={collapsed}
           userinfo={userinfo}
@@ -56,7 +54,7 @@ function BasicLayoutCom(): JSX.Element {
           onLogout={onLogout}
         />
         <Bread menus={menus} />
-        <Content className="content">
+        <Content className={customPageList.includes(location.pathname) ? 'main-content' : 'main-content p-[15px] bg-[#fff] m-[15px] mt-[0px]'}>
           <Outlet />
         </Content>
       </Layout>

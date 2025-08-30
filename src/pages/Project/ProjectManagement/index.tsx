@@ -65,12 +65,12 @@ import { UserInfo } from "@/models/index.type";
 // 本组件
 // ==================
 function ProjectMgContainer(): JSX.Element {
-  let userList: UserInfo[] = [];
   console.log("主页刷新");
 
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
   const [companyList, setCompanyList] = useState<SelectData[]>([]);
+  const [userList, setUserList] = useState<UserInfo[]>([])
   const [columns, setColumns] = useState<ColumnsType<TableRecordData>>([
     {
       title: "序号",
@@ -114,18 +114,7 @@ function ProjectMgContainer(): JSX.Element {
       key: "stage",
       width: 100,
       render: (v: number, record: TableRecordData) => {
-        let lastIndex = -1;
-        if (record.stage !== 0) {
-          lastIndex = record.stage - 1;
-        } else {
-          lastIndex = record.stages.findLastIndex((s) => {
-            return s.nodes.every((n: any) => processHandler.isNodeComplete(n));
-          });
-          lastIndex =
-            lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
-        }
-
-        const nowStage = record.stages[lastIndex];
+        const nowStage = processHandler.calcProjectStage(record)
         return nowStage.seq + "." + nowStage.name;
       },
       onCell: (record: any) => ({
@@ -425,7 +414,7 @@ function ProjectMgContainer(): JSX.Element {
     return new Promise(async function (resolve, reject) {
       const res = await sysApi.getUserList(tools.clearNull({ name: "" }));
       if (res && res.success) {
-        userList = res.data;
+        setUserList(res.data)
         resolve();
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -693,6 +682,7 @@ function ProjectMgContainer(): JSX.Element {
           }
           onClose={modalClose}
           companyList={companyList}
+          userList={userList}
           type={activeModal.operateType}
           data={activeModal.nowData}
           processHandler={processHandler}

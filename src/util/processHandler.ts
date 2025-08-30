@@ -401,13 +401,30 @@ class ProcessAHandler extends BaseProcessHandler {
     }
   }
   calcStatusDataCell(record: any, node: any) {
-    return {};
+    return {
+          rowSpan: record.rowSpan,
+        };
   }
 
   isNodeComplete(node: any) {
     return (
       node.plannedStart && node.plannedEnd && node.actualStart && node.actualEnd
     );
+  }
+
+  calcProjectStage(record: any) {
+    let lastIndex = -1;
+    if (record.stage !== 0) { // 有设置过项目阶段
+      lastIndex = record.stage - 1;
+    } else {
+      lastIndex = record.stages.findLastIndex((s: any) => {
+        return s.nodes.every((n: any) => this.isNodeComplete(n));
+      });
+      lastIndex =
+        lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
+    }
+
+    return record.stages[lastIndex];
   }
   taskPowersCheck(
     configNode: any,

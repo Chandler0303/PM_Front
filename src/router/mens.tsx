@@ -1,7 +1,7 @@
 // 所有的菜单数据
 export const menus = [
   {
-    id: 1,
+    id: 'HOME',
     title: "首页",
     icon: "DesktopOutlined",
     url: "/home",
@@ -10,7 +10,7 @@ export const menus = [
     sorts: 0,
   },
   {
-    id: 2,
+    id: 'PROJECT',
     title: "项目管理",
     icon: "MenuOutlined",
     url: "/project",
@@ -19,23 +19,31 @@ export const menus = [
     sorts: 1,
   },
   {
-    id: 3,
+    id: 'PROJECT_MANAGEMENT',
     title: "项目管理",
     url: "/project/management",
-    parent: 2,
+    parent: "PROJECT",
     desc: "项目管理/项目管理",
     sorts: 0,
   },
   {
-    id: 4,
+    id: "PROJECT_PROCEDURE",
     title: "流程管理",
     url: "/project/procedureMg",
-    parent: 2,
+    parent: "PROJECT",
     desc: "项目管理/流程管理",
     sorts: 1,
   },
   {
-    id: 5,
+    id: "PROJECT_ANALYSE",
+    title: "统计分析",
+    url: "/project/analyse",
+    parent: "PROJECT",
+    desc: "项目管理/统计分析",
+    sorts: 2,
+  },
+  {
+    id: "SYSTEM",
     title: "系统管理",
     icon: "SettingOutlined",
     url: "/system",
@@ -44,10 +52,10 @@ export const menus = [
     sorts: 2,
   },
   {
-    id: 6,
+    id: "SYSTEM_USER",
     title: "用户管理",
     url: "/system/useradmin",
-    parent: 5,
+    parent: "SYSTEM",
     desc: "系统管理/用户管理",
     sorts: 0,
   },

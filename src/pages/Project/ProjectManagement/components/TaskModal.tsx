@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Modal, message, Form, DatePicker, Select, Switch, Input } from "antd";
+import { Modal, message, Form } from "antd";
 import pmApi from "@/api/pm";
 import { projectStatusDict, nodeStatusDict } from "@/common/dict";
-import TextArea from "antd/lib/input/TextArea";
 import { TableRecordData } from "../index.type";
 import { useSetState } from "react-use";
 import tools from "@/util/tools";
@@ -169,8 +168,8 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
           processHandler.taskPowersCheck(configNode, node, userinfo?.username)
       );
     };
-    const editProject = async (values: any) => {
-      const res: Res | undefined = await pmApi.editProject(values);
+    const editProject = (values: any) => {
+      return pmApi.editProject(values);
     };
 
     const editHandleProcedure = async (values: any) => {
@@ -269,10 +268,10 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
                   pmApi.editProjectNode({
                     ...values,
                     id: n.value,
-                    plannedStart: values.plannedStart || undefined,
-                    plannedEnd: values.plannedEnd || undefined,
-                    actualStart: values.actualStart || undefined,
-                    actualEnd: values.actualEnd || undefined,
+                    plannedStart: values.plannedStart || null,
+                    plannedEnd: values.plannedEnd || null,
+                    actualStart: values.actualStart || null,
+                    actualEnd: values.actualEnd || null,
                     task: undefined,
                   })
                 );
@@ -281,10 +280,10 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
                   pmApi.editProjectNode({
                     ...values,
                     id: n.value,
-                    plannedStart: values.plannedStart || undefined,
-                    plannedEnd: values.plannedEnd || undefined,
-                    actualStart: values.actualStart || undefined,
-                    actualEnd: values.actualEnd || undefined,
+                    plannedStart: values.plannedStart || null,
+                    plannedEnd: values.plannedEnd || null,
+                    actualStart: values.actualStart || null,
+                    actualEnd: values.actualEnd || null,
                     task: undefined,
                   })
                 );
@@ -293,10 +292,10 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
                   pmApi.editProjectNode({
                     ...values,
                     id: n.value,
-                    plannedStart: values.plannedStart || undefined,
-                    plannedEnd: values.plannedEnd || undefined,
-                    actualStart: values.actualStart || undefined,
-                    actualEnd: values.actualEnd || undefined,
+                    plannedStart: values.plannedStart || null,
+                    plannedEnd: values.plannedEnd || null,
+                    actualStart: values.actualStart || null,
+                    actualEnd: values.actualEnd || null,
                     task: undefined,
                   })
                 );
@@ -316,10 +315,11 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
         setLoading(true);
 
         if (processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
-          editProject({
+          await editProject({
             ...data,
             shelve: Number(modalForm.shelve),
             status: modalForm.projectStatus,
+            stages: undefined
           });
         }
 

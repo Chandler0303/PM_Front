@@ -1,0 +1,7 @@
+.flex-center{
+    @apply flex items-center justify-center
+}
+
+.h1-title{
+    @apply text-[32px] font-[700]
+}
