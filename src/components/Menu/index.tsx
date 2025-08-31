@@ -20,8 +20,9 @@ import ImgLogo from "@/assets/logo.png";
 // 类型声明
 // ==================
 import type { Menu } from "@/models/index.type";
-import type { ItemType } from "antd/lib/menu/hooks/useItems";
+
 import DynamicIcon from "@/components/Icon";
+import { ItemType } from "antd/es/menu/interface";
 
 interface Props {
   data: Menu[]; // 所有的菜单数据

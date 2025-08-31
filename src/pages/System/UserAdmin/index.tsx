@@ -433,7 +433,7 @@ function UserAdminContainer(): JSX.Element {
     }
     if (info.file.status === 'done' && info.file.response.success) {
       setLoading(false);
-      setImageUrl(info.file.response.file.filePath);
+      setImageUrl(tools.getImageUrl(info.file.response.file.filePath));
     }
   };
 
@@ -485,6 +485,7 @@ function UserAdminContainer(): JSX.Element {
       <div className="div-table">
         <Table
           columns={tableColumns}
+          rowKey="username"
           loading={loading}
           dataSource={data}
           bordered

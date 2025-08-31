@@ -1,4 +1,5 @@
 /** 这个文件封装了一些常用的工具函数 **/
+import { imgUrl } from "@/config";
 import dayjs from "dayjs";
 import moment from "moment";
 const tools = {
@@ -181,9 +182,8 @@ const tools = {
     if (!startDate || !endDate) {
       return "";
     }
-    const start = dayjs(this.formatDate(startDate, "YYYY-MM-DD"));
-    const end = dayjs(this.formatDate(endDate, "YYYY-MM-DD"));
-    const diffDays = end.diff(start, "day"); // 结果：5
+    const timestamp = new Date(endDate).getTime() - new Date(startDate).getTime()
+    const diffDays = Math.ceil(timestamp / (1000 * 60 * 60 * 24));
     return diffDays;
   },
   addDays(date: string | Date, days: number) {
@@ -192,6 +192,16 @@ const tools = {
     }
     return moment(date).add(days, "days").format("YYYY-MM-DD");
   },
+
+  getImageUrl(url: string | null){
+    if (!url) {
+      return ''
+    }
+    if (url.indexOf('http') !== -1) {
+      return url
+    }
+    return imgUrl + url
+  }
 };
 
 export default tools;

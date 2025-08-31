@@ -275,8 +275,8 @@ function ProjectMgContainer(): JSX.Element {
   // 生命周期 - 组件挂载时触发一次
   useMount(async () => {
     onGetCompanyData();
-    await onGetUserData();
-    await onGetProcedureData();
+    const tmpUserList = await onGetUserData();
+    await onGetProcedureData(tmpUserList);
     onGetData();
   });
 
@@ -370,14 +370,14 @@ function ProjectMgContainer(): JSX.Element {
     return data;
   }
 
-  async function onGetProcedureData(): Promise<void> {
+  async function onGetProcedureData(tmpUserList: UserInfo[]): Promise<void> {
     return new Promise(async function (resolve, reject) {
       const res = await pmApi.getProcedureList();
       if (res && res.success) {
         // 设置流程配置
         processHandler.setProcedureConfig(res.data[0]);
         processHandler.setNodeType();
-        tableColumnsHandle();
+        tableColumnsHandle(tmpUserList);
         setStagesOptions(
           stagesOptionsHandle(processHandler.getProcedureStages())
         );
@@ -410,12 +410,12 @@ function ProjectMgContainer(): JSX.Element {
   }
 
   // 用户
-  async function onGetUserData(): Promise<void> {
+  async function onGetUserData(): Promise<UserInfo[]> {
     return new Promise(async function (resolve, reject) {
       const res = await sysApi.getUserList(tools.clearNull({ name: "" }));
       if (res && res.success) {
         setUserList(res.data)
-        resolve();
+        resolve(res.data);
       } else {
         message.error(res?.message ?? "数据获取失败");
         reject();
@@ -487,7 +487,7 @@ function ProjectMgContainer(): JSX.Element {
     });
   };
 
-  const tableColumnsHandle = () => {
+  const tableColumnsHandle = (tmpUserList: UserInfo[]) => {
     const stages = processHandler.getProcedureStages();
 
     const oneColumns: ColumnsType<TableRecordData> = stages.map(
@@ -505,7 +505,7 @@ function ProjectMgContainer(): JSX.Element {
           align: "center",
           children: [
             {
-              title: userHandle(participantsList), // 负责人
+              title: userHandle(participantsList, tmpUserList), // 负责人
               align: "center",
               children: stage.nodes.map((node: any) => {
                 return {
@@ -541,8 +541,8 @@ function ProjectMgContainer(): JSX.Element {
     ]);
   };
 
-  const userHandle = (users: string[]) => {
-    const userObj = processHandler.userDataHandle(users, userList);
+  const userHandle = (users: string[], tmpUserList: UserInfo[]) => {
+    const userObj = processHandler.userDataHandle(users, tmpUserList);
     const keys = Object.keys(userObj);
     return (
       <>
