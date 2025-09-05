@@ -21,8 +21,6 @@ import {
   PlusCircleOutlined,
   SearchOutlined,
   DeleteOutlined,
-  LoadingOutlined,
-  PlusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 
@@ -69,7 +67,6 @@ const beforeUpload = (file: File) => {
     message.error('请上传wgt文件!');
   }
   return isWgt;
-  return true
 };
 
 // ==================
@@ -116,6 +113,9 @@ function AppVersionContainer(): JSX.Element {
     try {
       const res = await sysApi.getVersionList(tools.clearNull(params));
       if (res && res.success) {
+        res.data.forEach((item: any, index: number) => {
+          item.index = index + 1
+        })
         setData(res.data);
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -157,6 +157,10 @@ function AppVersionContainer(): JSX.Element {
   const onOk = async (): Promise<void> => {
     try {
       const values = await form.validateFields();
+      if (!wgtUrl) {
+          message.warning('请上传wgt包')
+          return
+        }
       setModal({
         modalLoading: true,
       });
@@ -167,10 +171,6 @@ function AppVersionContainer(): JSX.Element {
         name: values.name
       };
       if (modal.operateType === "add") {
-        if (!wgtUrl) {
-          message.warning('请上传wgt包')
-          return
-        }
         // 新增
         try {
           const res: Res | undefined = await sysApi.addVersion(params);
@@ -196,7 +196,7 @@ function AppVersionContainer(): JSX.Element {
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
     try {
-      const res = await sysApi.delUser({ id });
+      const res = await sysApi.delVersion({ id });
       if (res && res.success) {
         message.success("删除成功");
         onGetData();
@@ -226,8 +226,8 @@ function AppVersionContainer(): JSX.Element {
   const tableColumns = [
     {
       title: "序号",
-      dataIndex: "id",
-      key: "id",
+      dataIndex: "index",
+      key: "index",
     },
     {
       title: "版本名称",
@@ -240,14 +240,19 @@ function AppVersionContainer(): JSX.Element {
       key: "version",
     },
     {
-      title: "路径",
-      dataIndex: "wgtUrl",
-      key: "wgtUrl",
-    },
-    {
       title: "描述",
       dataIndex: "remark",
       key: "remark",
+      width: 300,
+    },
+    {
+      title: "创建时间",
+      dataIndex: "createdDate",
+      key: "createdDate",
+      width: 180,
+      render: (v: string) => {
+        return tools.formatDate(v)
+      }
     },
     {
       title: "操作",
@@ -281,12 +286,10 @@ function AppVersionContainer(): JSX.Element {
   ];
 
   const handleChange = (info: UploadChangeParam) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
-    }
+    setModal({
+      modalLoading: false
+    })
     if (info.file.status === 'done' && info.file.response.success) {
-      setLoading(false);
       setWgtUrl(tools.getImageUrl(info.file.response.file.filePath));
     }
   };
@@ -361,7 +364,7 @@ function AppVersionContainer(): JSX.Element {
             ]}
           >
             <Input
-              placeholder="请输入版本名称"
+              placeholder="示例：1.0.0"
             />
           </Form.Item>
           <Form.Item
@@ -372,7 +375,7 @@ function AppVersionContainer(): JSX.Element {
               { required: true, whitespace: true, message: "请输入版本号" },
             ]}
           >
-            <Input placeholder="请输入版本号" />
+            <Input placeholder="示例：100" />
           </Form.Item>
           <Form.Item
             label="版本包"

@@ -104,7 +104,7 @@ export default {
    * **/
   async delVersion(params: { id: number }) {
     try {
-      const res: Res = await axios.delete("/api/user/" + params.id);
+      const res: Res = await axios.delete("/api/version/" + params.id);
       return res;
     } catch (err) {
       message.error("网络错误，请重试");

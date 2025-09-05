@@ -368,6 +368,15 @@ function UserAdminContainer(): JSX.Element {
       },
     },
     {
+      title: "创建时间",
+      dataIndex: "createdDate",
+      key: "createdDate",
+      width: 180,
+      render: (v: string) => {
+        return tools.formatDate(v)
+      }
+    },
+    {
       title: "操作",
       key: "control",
       width: 200,
