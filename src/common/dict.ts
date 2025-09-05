@@ -45,3 +45,18 @@ export const businessTypeDict = [
     value: 2,
   },
 ];
+
+export const importTypeDict = [
+  {
+    label: "覆盖导入",
+    value: 'overwrite',
+  },
+  {
+    label: "增量导入",
+    value: 'incremental',
+  },
+  {
+    label: "全量导入",
+    value: 'full',
+  },
+];

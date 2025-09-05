@@ -11,10 +11,12 @@ import "@/assets/styles/global.less";
 import "@/assets/styles/tailwindcss/index.css"
 
 import { ConfigProvider } from "antd";
-import zhCN from "antd/es/locale/zh_CN";
-import moment from "moment";
-import "moment/dist/locale/zh-cn";
-moment.locale("zh-cn");
+import zhCN from "antd/locale/zh_CN"; // ✅ v5 的 locale 路径变了
+import dayjs from "dayjs";
+import "dayjs/locale/zh-cn";
+
+dayjs.locale("zh-cn"); // 设置 dayjs 全局语言
+
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

@@ -1,4 +1,4 @@
-import { UserBasicInfoParam } from "@/models/index.type";
+import { UserBasicInfoParam, VersionBasicInfoParam } from "@/models/index.type";
 import axios from "@/util/axios"; // 自己写的工具函数，封装了请求数据的通用接口
 import { message } from "antd";
 import qs from "qs";
@@ -65,6 +65,46 @@ export default {
   async setUserRoles(params: { id: number; roles: number[] }) {
     try {
       const res: Res = await axios.post("/api/upUser", params);
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
+
+  /**
+   * 条件分页查询版本列表
+   * **/
+  async getVersionList(params: { name?: string }) {
+    try {
+      const res: Res = await axios.get(
+        `/api/version?${qs.stringify(params)}`
+      );
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
+  /**
+   * 添加版本
+   * **/
+  async addVersion(params: VersionBasicInfoParam) {
+    try {
+      const res: Res = await axios.post("/api/version", params);
+      return res;
+    } catch (err) {
+      message.error("网络错误，请重试");
+    }
+    return;
+  },
+
+  /**
+   * 删除版本
+   * **/
+  async delVersion(params: { id: number }) {
+    try {
+      const res: Res = await axios.delete("/api/user/" + params.id);
       return res;
     } catch (err) {
       message.error("网络错误，请重试");

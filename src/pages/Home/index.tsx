@@ -142,8 +142,8 @@ export default function HomePageContainer(): JSX.Element {
   return (
     <div className="m-[15px] mt-[0px]">
       <Row gutter={24}>
-        {opData.statusList.map((s: any) => (
-          <Col key={s.value} span={8}>
+        {opData.statusList.map((s: any, index) => (
+          <Col key={index} span={8}>
             <Card>
               <div className="flex-center flex-col">
                 <span className="h1-title" style={{ color: s.color }}>

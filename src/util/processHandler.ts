@@ -19,13 +19,11 @@ class BaseProcessHandler {
     let sum = 1;
     // 对每个流程的阶段进行排序
     // 并将每个阶段的节点进行排序
-    // 最后将每个流程的阶段和节点进行处理
+    this.setStageSort(tableData)
+
+    // 最后将每个流程的阶段和节点进行转转化为计划时间/实际时间/偏差分析处理
     // 生成新的表格数据
     tableData.forEach((item: TableRecordData, index: number) => {
-      item.stages.sort((a, b) => a.seq - b.seq);
-      item.stages.forEach((s) => {
-        s.nodes.sort((a: any, b: any) => a.seq - b.seq);
-      });
       item.index = index + 1;
       const key = item[idKey as keyof TableRecordData];
       list.push({
@@ -45,6 +43,14 @@ class BaseProcessHandler {
       });
     });
     return list;
+  }
+  setStageSort(list: TableRecordData[]) {
+    list.forEach(item => {
+      item.stages.sort((a, b) => a.seq - b.seq);
+      item.stages.forEach((s) => {
+        s.nodes.sort((a: any, b: any) => a.seq - b.seq);
+      });
+    })
   }
   getProcedureStages() {
     return this.procedureStages;
@@ -413,18 +419,17 @@ class ProcessAHandler extends BaseProcessHandler {
   }
 
   calcProjectStage(record: any) {
-    let lastIndex = -1;
+    let nowStageIndex = -1;
     if (record.stage !== 0) { // 有设置过项目阶段
-      lastIndex = record.stage - 1;
-    } else {
-      lastIndex = record.stages.findLastIndex((s: any) => {
+      nowStageIndex = record.stages.findIndex((s: any) => s.seq === record.stage);
+    } else { // 没有设置过项目阶段，反过来从后面找节点已经完成的往前➕1
+      nowStageIndex = record.stages.findLastIndex((s: any) => {
         return s.nodes.every((n: any) => this.isNodeComplete(n));
       });
-      lastIndex =
-        lastIndex === record.stages.length - 1 ? lastIndex : lastIndex + 1;
+      nowStageIndex =
+        nowStageIndex === record.stages.length - 1 ? nowStageIndex : nowStageIndex + 1;
     }
-
-    return record.stages[lastIndex];
+    return record.stages[nowStageIndex];
   }
   taskPowersCheck(
     configNode: any,
@@ -440,6 +445,25 @@ class ProcessAHandler extends BaseProcessHandler {
       !this.isNodeComplete(valNode)
     );
   }
+  calcProcedureDelay(record : any) {
+		let delay = 0
+		const nowStage = record.stages.find((s : any) => s.seq === record.stage)
+		if (nowStage) {
+			nowStage.nodes.forEach((n : any) => {
+				if (!n.actualEnd && n.actualStart) {
+					const planTimestamp = new Date(n.plannedEnd).getTime() - new Date(n.plannedStart).getTime()
+					const nowTimestamp = new Date().getTime() - new Date(n.actualStart).getTime()
+					const diffDays = Math.ceil((nowTimestamp - planTimestamp) / (1000 * 60 * 60 * 24));
+					if (diffDays > 0 && diffDays < 100) {
+						delay = 1
+					} else if (diffDays >= 100) {
+						delay = 2
+					}
+				}
+			})
+		}
+		return delay
+	}
 }
 
 // 2. 工厂类，根据流程类型创建对应实例

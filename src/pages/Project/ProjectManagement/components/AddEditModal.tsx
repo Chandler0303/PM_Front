@@ -40,6 +40,7 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
             type: Number(data.type),
             businessType: Number(data.businessType),
             year: dayjs(data.year),
+            remark: data.remark || ''
           });
         }
       }
@@ -198,6 +199,11 @@ const AddEditModal: React.FC<TaskModalProps> = React.memo(
             value: item.id
           }
         })
+      },
+      {
+        label: "备注",
+        name: "remark",
+        type: "textArea"
       },
     ];
 

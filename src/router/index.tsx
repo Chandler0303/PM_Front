@@ -41,6 +41,7 @@ const ProjectManagement = lazy(() => import("../pages/Project/ProjectManagement"
 const ProcedureManagement = lazy(() => import("../pages/Project/ProcedureManagement"));
 const ProjectAnalyse = lazy(() => import("../pages/Project/ProjectAnalyse"));
 const UserAdmin = lazy(() => import("../pages/System/UserAdmin"));
+const AppVersion = lazy(() => import("../pages/System/AppVersion"));
 
 // ==================
 // 本组件
@@ -114,6 +115,14 @@ function RouterCom(): JSX.Element {
             element={
               <AuthNoPower>
                 <UserAdmin />
+              </AuthNoPower>
+            }
+          />
+          <Route
+            path="system/version"
+            element={
+              <AuthNoPower>
+                <AppVersion />
               </AuthNoPower>
             }
           />

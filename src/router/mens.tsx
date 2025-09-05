@@ -59,6 +59,14 @@ export const menus = [
     desc: "系统管理/用户管理",
     sorts: 0,
   },
+  // {
+  //   id: "SYSTEM_VERSION",
+  //   title: "版本管理",
+  //   url: "/system/version",
+  //   parent: "SYSTEM",
+  //   desc: "系统管理/版本管理",
+  //   sorts: 1,
+  // },
 ];
 
 // 所有按钮权限

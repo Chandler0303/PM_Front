@@ -13,7 +13,8 @@ export type ProjectInfo = {
   stages: any[];
   shelve: number;
   company: any;
-  user: any
+  user: any;
+  remark: string
 };
 
 // 列表table的数据类型
@@ -34,7 +35,7 @@ export type ModalType = {
 export type SearchInfo = {
   name: string | undefined;
   year: string | undefined; // 年份
-  nodeStatus: number[] | undefined; // 节点状态
+  nodeStatus: Array<number | string> | undefined; // 节点状态
 };
 
 export type RoleTreeInfo = {

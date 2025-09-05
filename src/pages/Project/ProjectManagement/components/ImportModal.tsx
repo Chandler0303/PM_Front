@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Upload, Button, message } from "antd";
+import { Modal, Upload, Button, message, Form, Select } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import pmApi from "@/api/pm";
 import * as XLSX from "xlsx";
@@ -7,18 +7,22 @@ import {
   projectStatusDict,
   projectTypeDict,
   businessTypeDict,
+  importTypeDict
 } from "@/common/dict";
+import { UserInfo } from "@/models/index.type";
 
 interface ImportModalProps {
   companyList: SelectData[];
+  userList: UserInfo[];
   open: boolean;
   onClose: () => void;
   processHandler: any;
 }
 
 const ImportModal: React.FC<ImportModalProps> = React.memo(
-  ({ open, onClose, companyList, processHandler }) => {
+  ({ open, onClose, companyList, userList, processHandler }) => {
     console.log("导入弹框渲染了");
+    const [form] = Form.useForm();
     const [fileList, setFileList] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -44,8 +48,12 @@ const ImportModal: React.FC<ImportModalProps> = React.memo(
         });
         // console.log(jsonData); // 输出解析后的 JSON
         const projectData = handleData(jsonData);
+        // console.log(jsonData, jsonData)
+        // return
+        // const values = await form.validateFields();
+        
         try {
-          const res: any = await pmApi.insertProject({ projects: projectData });
+          const res: any = await pmApi.importProject({ projects: projectData, mode: 'full' });
           if (res && res.success) {
             message.success("请稍后刷新查看，后台正在导入...");
             close();
@@ -74,18 +82,21 @@ const ImportModal: React.FC<ImportModalProps> = React.memo(
 
       data.forEach((item, index) => {
         if (index > 4 && item.includes("计划时间")) {
+          const findUser = getDictVal(userList.map(u => ({label: u.name, value: u.id})), item[10], '')
           const project = {
             projCode: item[1],
             name: item[3],
-            status: getDictVal(projectStatusDict, item[6]),
+            status: getDictVal(projectStatusDict, item[7]),
             year: item[2],
-            type: getDictVal(projectTypeDict, item[5]),
+            type: getDictVal(projectTypeDict, item[6]),
             businessType: getDictVal(businessTypeDict, item[8]),
             company: getDictVal(companyList, item[9]),
+            user: findUser || undefined,
             shelve: 0,
-            amount: item[4],
-            stage: getStage(item[7]),
+            amount: item[5],
+            stage: getStage(item[4]),
             stages: createStages(headerData, item, data[index + 1]),
+            remark: item[item.length - 1]
           };
           projectData.push(project);
         }
@@ -167,8 +178,13 @@ const ImportModal: React.FC<ImportModalProps> = React.memo(
       if (!excelNum) {
         return null;
       }
-      const d = XLSX.SSF.parse_date_code(excelNum);
-      return new Date(d.y, d.m - 1, d.d, d.H, d.M, d.S);
+      if (typeof excelNum === 'string') {
+        return new Date(excelNum);
+      } else {
+        const d = XLSX.SSF.parse_date_code(excelNum);
+        return new Date(d.y, d.m - 1, d.d, d.H, d.M, d.S);
+      }
+      
     };
     const getStage = (label: string) => {
       const findData = processHandler.procedureStages.find(
@@ -176,9 +192,9 @@ const ImportModal: React.FC<ImportModalProps> = React.memo(
       );
       return findData ? findData.seq : processHandler.procedureStages[0].seq;
     };
-    const getDictVal = (dict: SelectData[], label: string) => {
+    const getDictVal = (dict: SelectData[], label: string, defaultVal = dict[0].value) => {
       const findData = dict.find((d: SelectData) => d.label === label);
-      return findData ? findData.value : dict[0].value;
+      return findData ? findData.value : defaultVal
     };
 
     const close = () => {
@@ -196,20 +212,34 @@ const ImportModal: React.FC<ImportModalProps> = React.memo(
         okText="上传"
         cancelText="取消"
       >
-        <Upload
-          fileList={fileList}
-          beforeUpload={(file) => {
-            return false; // 阻止 antd 自动上传
-          }}
-          onChange={({ fileList }) => setFileList(fileList)}
-          onRemove={() => {
-            setFileList([]);
-          }}
-          maxCount={1}
-          accept=".csv,.xlsx"
-        >
-          <Button icon={<UploadOutlined />}>选择文件</Button>
-        </Upload>
+        <Form form={form}
+          initialValues={{
+            mode: 'full',
+          }}>
+          <Form.Item label="导入文件：" required>
+            <Upload
+              fileList={fileList}
+              beforeUpload={(file) => {
+                return false; // 阻止 antd 自动上传
+              }}
+              onChange={({ fileList }) => setFileList(fileList)}
+              onRemove={() => {
+                setFileList([]);
+              }}
+              maxCount={1}
+              accept=".csv,.xlsx"
+            >
+              <Button icon={<UploadOutlined />}>选择文件</Button>
+            </Upload>
+          </Form.Item>
+          {/* <Form.Item label="导入类型：" name="mode" required>
+            <Select
+              style={{width: '300px'}}
+              options={importTypeDict}
+              placeholder="请选择导入类型"
+            />
+          </Form.Item> */}
+        </Form>
       </Modal>
     );
   }

@@ -84,3 +84,13 @@ export interface SysState {
   menus: Menu[];
   powerTreeData: PowerTree[];
 }
+
+
+// 添加修改版本时参数的数据类型
+export interface VersionBasicInfoParam {
+  id?: number; // ID
+  wgtUrl: string;
+  name: string | number;
+  version: string | number;
+  remark?: string;
+}

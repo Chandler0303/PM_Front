@@ -201,7 +201,18 @@ const tools = {
       return url
     }
     return imgUrl + url
-  }
+  },
+
+flattenTree<T extends { children?: T[] }>(arr: T[]): T[] {
+  let res: T[] = [];
+  arr.forEach(item => {
+    res.push(item);
+    if (item.children && item.children.length > 0) {
+      res = res.concat(tools.flattenTree(item.children));
+    }
+  });
+  return res;
+}
 };
 
 export default tools;

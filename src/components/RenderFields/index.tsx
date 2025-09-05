@@ -62,8 +62,9 @@ export default function RenderFields({ fields }: Props) {
         ) : field.type === "textArea" ? (
           <TextArea
             showCount
-            maxLength={100}
+            maxLength={512}
             placeholder={`请输入${field.label}`}
+            rows={4}
             style={{ height: 120, resize: "none" }}
           />
         ) : (

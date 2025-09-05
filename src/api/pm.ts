@@ -26,9 +26,9 @@ export default {
     return;
   },
 
-  async insertProject(params: any) {
+  async importProject(params: any) {
     try {
-      const res: Res = await axios.post(`/api/project/batchInsert`, params);
+      const res: Res = await axios.post(`/api/project/import`, params);
       return res;
     } catch (err) {
       message.error("网络错误，请重试");
@@ -39,19 +39,6 @@ export default {
   async editProject(params: ProjectInfo) {
     try {
       const res: Res = await axios.put(`/api/project/modify`, params);
-      return res;
-    } catch (err) {
-      message.error("网络错误，请重试");
-    }
-    return;
-  },
-  async importProject(formData: any) {
-    try {
-      const res: Res = await axios.post(`/api/project/import`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data", // 必须设置
-        },
-      });
       return res;
     } catch (err) {
       message.error("网络错误，请重试");

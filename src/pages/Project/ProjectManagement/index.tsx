@@ -15,11 +15,14 @@ import {
   Tooltip,
   Popconfirm,
   Cascader,
+  Modal
 } from "antd";
 
 import {
   DeleteOutlined,
+  DownloadOutlined,
   EditOutlined,
+  ExclamationCircleFilled,
   PlusCircleOutlined,
   SearchOutlined,
   ToolOutlined,
@@ -32,6 +35,7 @@ import {
 import tools from "@/util/tools"; // 工具函数
 import pmApi from "@/api/pm";
 import sysApi from "@/api/sys";
+import * as XLSX from "xlsx";
 import {
   projectStatusDict,
   projectTypeDict,
@@ -61,13 +65,16 @@ import TaskModal from "./components/TaskModal";
 import AddEditModal from "./components/AddEditModal";
 import { UserInfo } from "@/models/index.type";
 
+const { confirm } = Modal;
+
+
 // ==================
 // 本组件
 // ==================
 function ProjectMgContainer(): JSX.Element {
   console.log("主页刷新");
 
-  const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
+  const [tableData, setTableData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
   const [companyList, setCompanyList] = useState<SelectData[]>([]);
   const [userList, setUserList] = useState<UserInfo[]>([])
@@ -115,7 +122,7 @@ function ProjectMgContainer(): JSX.Element {
       width: 100,
       render: (v: number, record: TableRecordData) => {
         const nowStage = processHandler.calcProjectStage(record)
-        return nowStage.seq + "." + nowStage.name;
+        return nowStage.name;
       },
       onCell: (record: any) => ({
         rowSpan: record.rowSpan,
@@ -182,10 +189,39 @@ function ProjectMgContainer(): JSX.Element {
       }),
     },
     {
+      title: "项目经理",
+      dataIndex: "userName",
+      key: "userName",
+      width: 60,
+      render: (v: number, record: TableRecordData) => {
+        return record.user ? (record.user as any).name : "--";
+      },
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
+    },
+    {
       title: "时间点",
       key: "durationLabel",
       dataIndex: "durationLabel",
       width: 50,
+    },
+    {
+      title: "备注",
+      key: "remark",
+      dataIndex: "remark",
+      width: 150,
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (remark) => (
+        <Tooltip placement="left" title={remark}>
+          {remark}
+        </Tooltip>
+      ),
+      onCell: (record: any) => ({
+        rowSpan: record.rowSpan,
+      }),
     },
     {
       title: "操作",
@@ -288,12 +324,15 @@ function ProjectMgContainer(): JSX.Element {
         ...searchInfo,
       });
       if (res && res.success) {
-        let data = res.data;
+        let proejctList = res.data;
         if (searchInfo.nodeStatus) {
-          data = filterDataHandle(data);
+          proejctList = filterDataHandle(proejctList);
         }
-        const list = processHandler.tableDataSortHandler(data);
-        setData(tools.processRowSpan(list, "id"));
+
+        proejctList.sort((a: any, b: any) => a.stage - b.stage)
+
+        const list = processHandler.tableDataSortHandler(proejctList);
+        setTableData(tools.processRowSpan(list, "id"));
       } else {
         message.error(res?.message ?? "数据获取失败");
       }
@@ -302,72 +341,92 @@ function ProjectMgContainer(): JSX.Element {
     }
   }
 
-  function filterDataHandle(data: any[]) {
+  function filterDataHandle(proejctList: any[]) {
     const nodesStatus = searchInfo.nodeStatus || [];
     if (!nodesStatus.length) {
-      return data;
+      return proejctList;
     }
     // let filterStatus = nodesStatus[2]
 
-    data = data.filter((p) => {
-      const stage = p.stages.find((s: any) => s.seq === nodesStatus[0]);
-      const node = stage.nodes.find((n: any) => n.seq === nodesStatus[1]);
-      let filterStatus = false;
-      if (processHandler.startTimeNodeKeys.includes(node.name)) {
-        // 查询未完成/已完成
-        if (nodesStatus[2] === 0) {
-          filterStatus = !processHandler.isNodeComplete(node);
-        } else {
-          filterStatus = processHandler.isNodeComplete(node);
-        }
-      } else if (processHandler.statusNodeKeys.includes(node.name)) {
-        // 查询未完成/已完成
-        if (nodesStatus[2] === 0) {
-          filterStatus = node.status === 0;
-        } else {
-          filterStatus = node.status === 1;
-        }
-      } else {
-        // 查询延误/未延误
-        if (processHandler.isNodeComplete(node)) {
-          const pStart = new Date(
-            tools.formatDate(node.plannedStart, "YYYY-MM-DD")
-          ).getTime();
-          const pEnd = new Date(
-            tools.formatDate(node.plannedEnd, "YYYY-MM-DD")
-          ).getTime();
-          const aStart = new Date(
-            tools.formatDate(node.actualStart, "YYYY-MM-DD")
-          ).getTime();
-          const aEnd = new Date(
-            tools.formatDate(node.actualEnd, "YYYY-MM-DD")
-          ).getTime();
+    // stage筛选
+    if (nodesStatus.length === 1 || nodesStatus.length === 2) {
+      proejctList = proejctList.filter((p) => {
+        const nowStage = processHandler.calcProjectStage(p)
+        return nowStage.seq === nodesStatus[0]
+      })
+    } else {
+      proejctList = proejctList.filter((p) => {
+        const stage = p.stages.find((s: any) => s.seq === nodesStatus[0]);
+        
+        const node = stage.nodes.find((n: any) => n.seq === nodesStatus[1]);
+        let filterStatus = false;
 
-          if (node.name === "开工日期") {
-            if (nodesStatus[2] === 0) {
-              filterStatus = aStart > pStart;
-            } else {
-              filterStatus = !(aStart > pStart);
-            }
-          } else if (node.name === "竣工日期") {
-            if (nodesStatus[2] === 0) {
-              filterStatus = aEnd > pEnd;
-            } else {
-              filterStatus = !(aEnd > pEnd);
-            }
+        if (processHandler.startTimeNodeKeys.includes(node.name)) {
+          // 查询未完成/已完成
+          if (nodesStatus[2] === 'incomplete') {
+            filterStatus = !processHandler.isNodeComplete(node);
           } else {
-            if (nodesStatus[2] === 0) {
-              filterStatus = aEnd - aStart > pEnd - pStart;
-            } else {
-              filterStatus = !(aEnd - aStart > pEnd - pStart);
-            }
+            filterStatus = processHandler.isNodeComplete(node);
+          }
+        } else if (processHandler.statusNodeKeys.includes(node.name)) {
+          // 查询未完成/已完成
+          if (nodesStatus[2] === 'incomplete') {
+            filterStatus = node.status === 0;
+          } else {
+            filterStatus = node.status === 1;
+          }
+        } else {
+          switch(nodesStatus[2]) {
+            case 'incomplete':
+              filterStatus = !processHandler.isNodeComplete(node);
+              break
+            case 'complete':
+              filterStatus = processHandler.isNodeComplete(node);
+              break
+            default:
+              // 查询延误/未延误
+              if (processHandler.isNodeComplete(node)) {
+                const pStart = new Date(
+                  tools.formatDate(node.plannedStart, "YYYY-MM-DD")
+                ).getTime();
+                const pEnd = new Date(
+                  tools.formatDate(node.plannedEnd, "YYYY-MM-DD")
+                ).getTime();
+                const aStart = new Date(
+                  tools.formatDate(node.actualStart, "YYYY-MM-DD")
+                ).getTime();
+                const aEnd = new Date(
+                  tools.formatDate(node.actualEnd, "YYYY-MM-DD")
+                ).getTime();
+
+                if (node.name === "开工日期") {
+                  if ((nodesStatus[2] as any) === 'delay') {
+                    filterStatus = aStart > pStart;
+                  } else {
+                    filterStatus = !(aStart > pStart);
+                  }
+                } else if (node.name === "竣工日期") {
+                  if ((nodesStatus[2] as any) === 'delay') {
+                    filterStatus = aEnd > pEnd;
+                  } else {
+                    filterStatus = !(aEnd > pEnd);
+                  }
+                } else {
+                  if ((nodesStatus[2] as any) === 'delay') {
+                    filterStatus = aEnd - aStart > pEnd - pStart;
+                  } else {
+                    filterStatus = !(aEnd - aStart > pEnd - pStart);
+                  }
+                }
+              }
+              break
+              
           }
         }
-      }
-      return filterStatus;
-    });
-
-    return data;
+        return filterStatus;
+      });
+    }
+    return proejctList;
   }
 
   async function onGetProcedureData(tmpUserList: UserInfo[]): Promise<void> {
@@ -463,23 +522,33 @@ function ProjectMgContainer(): JSX.Element {
           return {
             label: node.name,
             value: node.seq,
-            children: [
+            children: processHandler.startTimeNodeKeys.includes(node.name) ||
+                  processHandler.statusNodeKeys.includes(node.name) ? [
               {
-                label:
-                  processHandler.startTimeNodeKeys.includes(node.name) ||
-                  processHandler.statusNodeKeys.includes(node.name)
-                    ? "未完成"
-                    : "超时",
-                value: 0,
+                label: "未完成",
+                value: 'incomplete',
               },
               {
-                label:
-                  processHandler.startTimeNodeKeys.includes(node.name) ||
-                  processHandler.statusNodeKeys.includes(node.name)
-                    ? "已完成"
-                    : "正常",
-                value: 1,
+                label: "已完成",
+                value: 'complete',
+              }
+            ] : [
+              {
+                label: "超时",
+                value: 'delay',
               },
+              {
+                label: "正常",
+                value: 'normal',
+              },
+               {
+                label: "未完成",
+                value: 'incomplete',
+              },
+              {
+                label: "已完成",
+                value: 'complete',
+              }
             ],
           };
         }),
@@ -535,27 +604,137 @@ function ProjectMgContainer(): JSX.Element {
     );
 
     setColumns([
-      ...columns.slice(0, columns.length - 1),
+      ...columns.slice(0, columns.length - 2),
       ...oneColumns,
-      columns[columns.length - 1],
+      ...columns.slice(columns.length - 2),
     ]);
   };
 
-  const userHandle = (users: string[], tmpUserList: UserInfo[]) => {
+  const userHandle = (users: string[], tmpUserList: UserInfo[], isEle = true) => {
     const userObj = processHandler.userDataHandle(users, tmpUserList);
     const keys = Object.keys(userObj);
-    return (
-      <>
-        {keys.length
-          ? keys.map((key) => (
-              <div key={key}>
-                {key}（{userObj[key].join("、")}）
-              </div>
-            ))
-          : "--"}
-      </>
-    );
+    if (isEle) {
+      return (
+        <>
+          {keys.length
+            ? keys.map((key) => (
+                <div key={key}>
+                  {key}（{userObj[key].join("、")}）
+                </div>
+              ))
+            : "--"}
+        </>
+      );
+    } else {
+      return keys.length
+            ? keys.map((key) => (
+                key + `（${userObj[key].join("、")}）`
+              ))
+            : "--"
+    }
   };
+
+  const exportToExcel = () => {
+    confirm({
+      title: '提示',
+      icon: <ExclamationCircleFilled />,
+      content: '确实要进行导出吗？',
+      onOk() {
+        const flattenColumn = tools.flattenTree(columns as any[]).filter(item => item.dataIndex)
+        const columnLen = flattenColumn.length - 1 // 去掉操作列
+        const baseHeader = flattenColumn.slice(0, 11).map(item => item.title)
+        const baseEnd = ['备注']
+        const oneHeader: any[] = new Array(columnLen - 1).fill(null)
+        oneHeader.unshift("经营管理【工程项目】流程关键节点管控表");
+
+        const twoHeader: any[] = []
+        processHandler.getProcedureStages().forEach(s => {
+          twoHeader.push(s.stageName)
+          let i = s.nodes.length - 1
+          while(i > 0) {
+            twoHeader.push(null)
+            i--
+          }
+        })
+        const exportData: any = [
+          oneHeader,
+          [...baseHeader, '业务流时间节点', ...twoHeader, ...baseEnd],
+          [...baseHeader, '业务流时间节点', ...processHandler.getProcedureNodes().map(n => (userHandle(n.participants, userList, false))), ...baseEnd],
+          [...baseHeader, '业务流时间节点', ...processHandler.getProcedureNodes().map(n => (n.name)), ...baseEnd],
+          [...baseHeader, '制度要求时间', ...processHandler.getProcedureNodes().map(n => (n.plannedDays || '--')), ...baseEnd],
+        ];
+        // console.log(exportData)
+        // return
+
+        // 获取招标采购节点列索引
+        const statusIndexList = processHandler.statusNodeKeys.map(key => {
+          return processHandler.getProcedureNodes().findIndex(item => item.name === key) + baseHeader.length + 1
+        })
+        const mergeStages = processHandler.getProcedureStages().filter(s => s.nodes.length > 1)
+
+
+        //  设置合并规则
+        // s = start (起点), e = end (终点)，r = row, c = col
+        // 表头合并
+        let mergesRules =[ 
+          { s: { r: 0, c: 0 }, e: { r: 0, c: columnLen - 1 } },
+          // 跨行合并
+          { s: { r: 1, c: baseHeader.length }, e: { r: 3, c: baseHeader.length } },
+          ...baseHeader.map((item, index) => ({s: { r: 1, c: index }, e: { r: 4, c: index }})),
+          { s: { r: 1, c: columnLen - 1 }, e: { r: 4, c: columnLen - 1 } },
+        ];
+        mergeStages.forEach(s => {
+          const mergeStartIndex = processHandler.getProcedureNodes().findIndex(item => item.name === s.nodes[0].name) + baseHeader.length + 1
+          mergesRules.push({
+            s: { r: 1, c: mergeStartIndex }, e: { r: 1, c: mergeStartIndex + (s.nodes.length - 1) }
+          })
+        })
+
+        // 计算行数据合并 三行合并一行（基本列 + 物资招标列）
+        const calcTableSpan: any = []
+        const hasIds:any = {}
+        let startRowIndex = 5
+        tableData.forEach((item: any, index) => {
+          const rowData = flattenColumn.map((col: any) => {
+            if (col.dataIndex === 'remark') {
+              return item.remark
+            }else {
+              return col.render ? col.render(item[col.key], item) : item[col.key]
+            }
+            
+          })
+          exportData.push(rowData)
+         
+          if (!hasIds[item.id]) {
+            calcTableSpan.push(...baseHeader.map((item, index) => ({s: { r: startRowIndex, c: index }, e: { r: startRowIndex + 2, c: index }})),)
+            statusIndexList.forEach(item => {
+              calcTableSpan.push({s: { r: startRowIndex, c: item }, e: { r: startRowIndex + 2, c: item }})
+            })
+            calcTableSpan.push(...baseEnd.map((item, index) => ({s: { r: startRowIndex, c: columnLen - 1 }, e: { r: startRowIndex + 2, c: columnLen - 1 }})),)
+            hasIds[item.id] = true
+            startRowIndex += 3
+          }
+        })
+        // console.log(exportData)
+        // return
+        // console.log(mergesRules)
+        mergesRules = mergesRules.concat(calcTableSpan)
+
+        // 将 JSON 数据转成 worksheet
+        const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+        // worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet["!merges"] = mergesRules
+        // 创建 workbook 并写入
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "经营管理【工程项目】流程关键节点管控表");
+        XLSX.writeFile(workbook, "工程类项目.xlsx");
+        message.success("导出成功");
+      },
+      onCancel() {
+        console.log('Cancel');
+      },
+    });
+  }
 
   return (
     <div>
@@ -581,7 +760,7 @@ function ProjectMgContainer(): JSX.Element {
             <AuthWrapper code="1001">
               <Button
                 type="primary"
-                icon={<UploadOutlined />}
+                icon={<DownloadOutlined />}
                 onClick={() =>
                   setActiveModal({
                     operateType: "import",
@@ -590,6 +769,17 @@ function ProjectMgContainer(): JSX.Element {
                 }
               >
                 导入项目
+              </Button>
+            </AuthWrapper>
+          </li>
+          <li style={{ marginLeft: "10px" }}>
+            <AuthWrapper code="1001">
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={exportToExcel}
+              >
+                导出项目
               </Button>
             </AuthWrapper>
           </li>
@@ -662,7 +852,7 @@ function ProjectMgContainer(): JSX.Element {
         <Table
           columns={columns}
           loading={loading}
-          dataSource={data}
+          dataSource={tableData}
           className="my-table"
           rowKey="newId"
           scroll={{ x: "300", y: "60vh" }}
@@ -703,6 +893,7 @@ function ProjectMgContainer(): JSX.Element {
           open={activeModal.operateType === "import"}
           onClose={modalClose}
           companyList={companyList}
+          userList={userList}
           processHandler={processHandler}
         />
       )}

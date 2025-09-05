@@ -24,6 +24,7 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
     try {
       const res = await pmApi.getProjectList({});
       if (res && res.success) {
+        processHandler.setStageSort(res.data)
         initProjectOp(res.data)
       } else {
         message.error(res?.message ?? "数据获取失败");
@@ -40,52 +41,88 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
         count: 0
       }
     })
-    stages.sort((a:any, b:any) => a.seq - b.seq)
 
     const yearObj: any = {}
     const yearSeriesList = []
-    const stageHandlingList: any[] = []
+    const stageSeriesData = [{
+          name: '正常',
+          type: 'bar',
+          emphasis: {
+            focus: 'series'
+          },
+          data: new Array(stages.length).fill(0)
+        },
+        {
+          name: '预计超期<=100',
+          type: 'bar',
+          color: processHandler.warningColor,
+          emphasis: {
+            focus: 'series'
+          },
+          data: new Array(stages.length).fill(0)
+        },
+        {
+          name: '预计超期>100',
+          type: 'bar',
+          color: processHandler.errorColor,
+          emphasis: {
+            focus: 'series'
+          },
+          data: new Array(stages.length).fill(0)
+        }]
 
     list.forEach(item => {
       // 计算当前项目阶段
-      item.stage = processHandler.calcProjectStage(item).seq
-      if (stageHandlingList[item.stage - 1]) {
-        stageHandlingList[item.stage - 1].push(item)
-      } else {
-        stageHandlingList[item.stage - 1] = [item]
-      }
-        // 任务统计
-        item.stages.forEach((s: any) => {
-          let isNodeComplete = s.nodes.every((n: any) => processHandler.isNodeComplete(n))
-          if (s.name === '招标采购') {
-            isNodeComplete = s.nodes.every((n: any) => n.status === 1)
-          }
-          const findStage = stages.find((stage: any) => stage.seq === s.seq)
-          if (findStage && isNodeComplete) {
-            findStage.count += 1
-          }
-        })
+      const nowStage = processHandler.calcProjectStage(item)
+      item.stage = nowStage.seq
+      const stageDelay = processHandler.calcProcedureDelay(item)
+      stageSeriesData[stageDelay].data[item.stage - 1] = stageSeriesData[stageDelay].data[item.stage - 1] + 1
 
-        // 年份
-        if (yearObj[item.year]) {
-          yearObj[item.year].push(item);
-        } else {
-          yearObj[item.year] = [item];
+
+      // 任务统计
+      item.stages.forEach((s: any) => {
+        let isNodeComplete = s.nodes.every((n: any) => processHandler.isNodeComplete(n))
+        if (s.name === '招标采购') {
+          isNodeComplete = s.nodes.every((n: any) => n.status === 1)
+        } else if (s.name === '工程施工') {
+          isNodeComplete = item.status === 3
         }
+        const findStage = stages.find((stage: any) => stage.seq === s.seq)
+        if (findStage && isNodeComplete) {
+          findStage.count += 1
+        }
+      })
+
+      // 年份
+      if (yearObj[item.year]) {
+        yearObj[item.year].push(item);
+      } else {
+        yearObj[item.year] = [item];
+      }
     })
 
+
+    const yearList = Object.keys(yearObj).map(Number).sort((a, b) => a - b);
+    const lastFourYears = yearList.slice(-4);
     for (const i in yearObj) {
-      const stageCount = new Array(stages.length).fill(0);
-      yearObj[i].forEach((p: any) => {
-        stageCount[p.stage - 1] += 1
-      })
-      yearSeriesList.push({
-        name: i,
-        data: stageCount
-      })
+      if (Number(i) < lastFourYears[0]) {
+        yearObj[lastFourYears[0]] = yearObj[lastFourYears[0]].concat(yearObj[i])
+      }
     }
-
-
+    for (const i in yearObj) {
+      if (lastFourYears.includes(Number(i))) {
+        const stageCount = new Array(stages.length).fill(0);
+        yearObj[i].forEach((p: any) => {
+          stageCount[p.stage - 1] += 1
+        })
+        yearSeriesList.push({
+          name: i,
+          data: stageCount
+        })
+      }
+      
+    }
+  
 
     const yearProcedure = {
       tooltip: {
@@ -103,9 +140,10 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
         type: 'category',
         data: stages.map((s: any) => s.name)
       },
-      series: yearSeriesList.map((s: any) => {
+      series: yearSeriesList.map((s: any, index: number) => {
         return {
           ...s,
+          name: index === 0 ? s.name + '及以前' : s.name,
           type: 'bar'
         }
       })
@@ -131,32 +169,7 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
           type: 'value'
         }
       ],
-      series: [
-        {
-          name: '正常',
-          type: 'bar',
-          emphasis: {
-            focus: 'series'
-          },
-          data: [320, 332, 301, 100, 200, 300]
-        },
-        {
-          name: '预计超期<=100',
-          type: 'bar',
-          emphasis: {
-            focus: 'series'
-          },
-          data: [120, 132, 101]
-        },
-        {
-          name: '预计超期>100',
-          type: 'bar',
-          emphasis: {
-            focus: 'series'
-          },
-          data: [220, 182, 191]
-        }
-      ]
+      series: stageSeriesData
     };
 
     
@@ -174,7 +187,7 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
     <div className="m-[15px] mt-[0px]">
       <Row gutter={24}>
         <Col span={24}>
-          <Card>
+          <Card title="完成分析">
             {opData.stagesOpData.map((op: any, index) => (
               <div key={op.seq} className={index === 0 ? 'flex' : "flex mt-[10px]"}>
                 <span className="w-[150px]">{op.name}</span>
@@ -191,16 +204,16 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
           </Card>
         </Col>
       </Row>
-      <Row gutter={24}>
+      <Row gutter={24} className="mt-[20px]">
         <Col span={24}>
-          <Card>
+          <Card title="年度分析">
             <ReactECharts option={opData.yearProcedureOpData} />
           </Card>
         </Col>
       </Row>
-       <Row gutter={24}>
+       <Row gutter={24} className="mt-[20px]">
         <Col span={24}>
-          <Card>
+          <Card title="进行中分析">
             <ReactECharts option={opData.stageProcedureOpData} />
           </Card>
         </Col>
