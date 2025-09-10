@@ -1,7 +1,7 @@
 /** 这个文件封装了一些常用的工具函数 **/
 import { imgUrl } from "@/config";
 import dayjs from "dayjs";
-import moment from "moment";
+
 const tools = {
   /**
    * 保留N位小数
@@ -176,7 +176,7 @@ const tools = {
     if (!date) {
       return "";
     }
-    return moment(date, format);
+    return dayjs(date, format);
   },
   diffDays(startDate: string | Date, endDate: string | Date): number | string {
     if (!startDate || !endDate) {
@@ -190,7 +190,7 @@ const tools = {
     if (!date) {
       return "";
     }
-    return moment(date).add(days, "days").format("YYYY-MM-DD");
+    return dayjs(date).add(days, "days").format("YYYY-MM-DD");
   },
 
   getImageUrl(url: string | null){

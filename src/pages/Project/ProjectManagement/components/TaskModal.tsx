@@ -313,7 +313,6 @@ const TaskModal: React.FC<TaskModalProps> = React.memo(
         }
 
         setLoading(true);
-
         if (processHandler.customTimeNodeKeys.includes(modalForm.nodeLabel)) {
           await editProject({
             ...data,
