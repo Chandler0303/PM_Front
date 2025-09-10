@@ -74,6 +74,7 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
     list.forEach(item => {
       // 计算当前项目阶段
       const nowStage = processHandler.calcProjectStage(item)
+      item.sourceStage = item.stage
       item.stage = nowStage.seq
       const stageDelay = processHandler.calcProcedureDelay(item)
       stageSeriesData[stageDelay].data[item.stage - 1] = stageSeriesData[stageDelay].data[item.stage - 1] + 1
@@ -81,11 +82,16 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
 
       // 任务统计
       item.stages.forEach((s: any) => {
+        // 未设置过stage则按完成时间是否填写判断完成
         let isNodeComplete = s.nodes.every((n: any) => processHandler.isNodeComplete(n))
-        if (s.name === '招标采购') {
+        if (s.name === '招标采购') { // 特殊节点
           isNodeComplete = s.nodes.every((n: any) => n.status === 1)
-        } else if (s.name === '工程施工') {
+        } else if (s.name === '工程施工') { // 特殊节点
           isNodeComplete = item.status === 3
+        } else { // 正常节点 & 手动设置过stage 则前面的正常节点都算完成
+          if (item.sourceStage !== 0 && (Number(s.seq) < Number(item.sourceStage))) {
+            isNodeComplete = true
+          }
         }
         const findStage = stages.find((stage: any) => stage.seq === s.seq)
         if (findStage && isNodeComplete) {
@@ -195,6 +201,7 @@ export default function ProjectAnalysePageContainer(): JSX.Element {
                   <Progress
                     percent={Number((op.count/opData.projectLen * 100).toFixed(0))}
                     percentPosition={{ align: 'center', type: 'inner' }}
+                    showInfo={op.count !== 0}
                     size={[500, 20]}
                   />
                 </div>

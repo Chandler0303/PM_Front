@@ -436,12 +436,10 @@ function UserAdminContainer(): JSX.Element {
   ];
 
   const handleChange = (info: UploadChangeParam) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
-    }
+    setModal({
+      modalLoading: false
+    })
     if (info.file.status === 'done' && info.file.response.success) {
-      setLoading(false);
       setImageUrl(tools.getImageUrl(info.file.response.file.filePath));
     }
   };

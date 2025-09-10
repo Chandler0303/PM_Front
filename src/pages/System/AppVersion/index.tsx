@@ -218,9 +218,6 @@ function AppVersionContainer(): JSX.Element {
 
 
 
-  // ==================
-  // 属性 和 memo
-  // ==================
 
   // table字段
   const tableColumns = [
@@ -228,22 +225,33 @@ function AppVersionContainer(): JSX.Element {
       title: "序号",
       dataIndex: "index",
       key: "index",
+      width: 80,
     },
     {
       title: "版本名称",
       dataIndex: "name",
       key: "name",
+      width: 150,
     },
     {
       title: "版本号",
       dataIndex: "version",
       key: "version",
+      width: 150,
     },
     {
       title: "描述",
       dataIndex: "remark",
       key: "remark",
       width: 300,
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (remark: string) => (
+        <Tooltip placement="left" title={remark}>
+          {remark}
+        </Tooltip>
+      ),
     },
     {
       title: "创建时间",
@@ -257,7 +265,7 @@ function AppVersionContainer(): JSX.Element {
     {
       title: "操作",
       key: "control",
-      width: 200,
+      width: 80,
       render: (v: null, record: TableRecordData) => {
         return (
           <>
@@ -341,7 +349,7 @@ function AppVersionContainer(): JSX.Element {
           loading={loading}
           dataSource={data}
           bordered
-          scroll={{ x: "max-content", y: "65vh" }}
+          scroll={{ x: "300", y: "60vh" }}
           pagination={false}
         />
       </div>
